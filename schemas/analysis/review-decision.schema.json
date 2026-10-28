@@ -1,0 +1,71 @@
+{
+  "$defs": {
+    "Verdict": {
+      "enum": [
+        "accept",
+        "reject",
+        "dispute"
+      ],
+      "title": "Verdict",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "The recorded decision + published event (schema source of truth).",
+  "properties": {
+    "event_type": {
+      "default": "review-decision",
+      "title": "Event Type",
+      "type": "string"
+    },
+    "decision_id": {
+      "title": "Decision Id",
+      "type": "string"
+    },
+    "analysis_id": {
+      "title": "Analysis Id",
+      "type": "string"
+    },
+    "item_id": {
+      "title": "Item Id",
+      "type": "string"
+    },
+    "item_type": {
+      "title": "Item Type",
+      "type": "string"
+    },
+    "verdict": {
+      "$ref": "#/$defs/Verdict"
+    },
+    "status": {
+      "description": "accepted | rejected | disputed",
+      "title": "Status",
+      "type": "string"
+    },
+    "reviewer": {
+      "title": "Reviewer",
+      "type": "string"
+    },
+    "comment": {
+      "default": "",
+      "title": "Comment",
+      "type": "string"
+    },
+    "recorded_at": {
+      "title": "Recorded At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "decision_id",
+    "analysis_id",
+    "item_id",
+    "item_type",
+    "verdict",
+    "status",
+    "reviewer",
+    "recorded_at"
+  ],
+  "title": "ReviewDecisionEvent",
+  "type": "object"
+}

@@ -81,6 +81,12 @@ from pydantic import BaseModel, Field
 from services.common.analysis import AnalysisParseError, SourceDocument
 from services.common.analyze import AnalysisUnavailable, analyze_documents
 
+from mock_fen_api.decisions import (
+    ReviewDecisionBody,
+    build_event,
+    find_item,
+    item_is_verified,
+)
 from mock_fen_api.scaffold import run_scaffold
 
 setup_logging("mock-fen-api", level=log_level_from_env())
@@ -128,6 +134,11 @@ _candidates: Dict[str, dict] = {}
 # is the process lifetime (labelled simulated/demo in HACKATHON.md).
 _analyses: Dict[str, dict] = {}
 MAX_ANALYZE_CHARS = 30_000  # total document text limit for POST /analyze (T3)
+# Human review decisions (T4): append-only, immutable records. The demo
+# event publication appends to _decision_events (in-memory event log,
+# labelled simulated); tests inject app.state.decision_publisher instead.
+_decisions: list = []
+_decision_events: list = []
 
 
 class AnalyzeBody(BaseModel):
@@ -626,6 +637,56 @@ def analyze(payload: AnalyzeBody):
             "_documents": [d.model_dump(mode="json") for d in payload.documents],
         }
     return result
+
+
+@app.post("/decisions", status_code=201)
+def create_decision(payload: ReviewDecisionBody):
+    """Record a HUMAN decision on one proposed item (T4, SPEC section 6).
+
+    This is the only endpoint that can move an item out of ``proposed``:
+    accept -> accepted, reject -> rejected, dispute -> disputed. Rules:
+    accept on an unverified quote -> 409; decisions are immutable — a
+    repeat decision appends a new record and the old one stays untouched.
+    Publishes a ``review-decision`` event (schema:
+    schemas/analysis/review-decision.schema.json) via
+    ``app.state.decision_publisher`` when injected, otherwise to the
+    in-memory demo event log + SSE broadcast.
+    """
+    with _state_lock:
+        analysis = _analyses.get(payload.analysis_id)
+    if analysis is None:
+        raise HTTPException(status_code=404, detail="unknown analysis_id")
+    item = find_item(analysis, payload.item_type, payload.item_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="unknown item_id for this analysis")
+    if payload.verdict.value == "accept" and not item_is_verified(item, payload.item_type):
+        raise HTTPException(
+            status_code=409,
+            detail="cannot accept an item with an unverified quote",
+        )
+
+    event = build_event(payload)
+    record = event.model_dump(mode="json")
+    with _state_lock:
+        _decisions.append(record)
+
+    publisher = getattr(app.state, "decision_publisher", None)
+    try:
+        if callable(publisher):
+            publisher(record)
+        else:
+            with _state_lock:
+                _decision_events.append(record)
+            _broadcast("decision", record)
+        event_published = True
+    except Exception:  # noqa: BLE001 - record stands; publication is reported honestly
+        logger.exception("decision event publication failed for %s", record["decision_id"])
+        event_published = False
+    return {
+        "decision_id": record["decision_id"],
+        "recorded_at": record["recorded_at"],
+        "event_published": event_published,
+    }
 
 
 @app.get("/events")

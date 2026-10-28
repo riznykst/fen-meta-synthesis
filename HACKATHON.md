@@ -73,6 +73,11 @@ Each line names the task commit that introduced it.
   (`0xMOCK` ledger anchors).
 - Human-review registry for hackathon decisions (T4/T5): demo-scope store
   unless a task explicitly wires a persistent backend.
+- T4 — Human decisions: `POST /decisions` (separate `review-decision`
+  event schema in `schemas/analysis/review-decision.schema.json`; the Kafka
+  governance schema is unchanged). Accept on an unverified quote -> 409;
+  decisions are immutable/append-only. Registry and default event log are
+  in-memory demo scope (process lifetime), as recorded in OPEN_QUESTIONS Q7.
 - Quality measurements (T7) and the second-provider comparison (Baseten,
   `muse-spark-open-1026`) are **planned** until a real dataset (T8, supplied
   by the human) and provider access exist.

@@ -91,7 +91,25 @@ evidence location against the documents in *this* request — not truth.
   and `services/common/llm.py`. Contract schema:
   `schemas/analysis/document-analysis.schema.json`.
 
-## 3d. Voting modes — `POST /candidates/{annotation_id}/vote`
+## 3d. Human review decision — `POST /decisions` (T4, SPEC section 6)
+
+```json
+{ "analysis_id": "an_01...", "item_id": "c1", "item_type": "claim", "verdict": "accept", "comment": "", "reviewer": "reviewer-1" }
+```
+
+→ `201 {"decision_id", "recorded_at", "event_published"}`. This is the
+**only** way an item leaves `proposed`: `accept → accepted`,
+`reject → rejected`, `dispute → disputed` (latest decision wins; records
+are immutable and append-only — a repeat decision creates a new record).
+Publishes a `review-decision` event
+(`schemas/analysis/review-decision.schema.json`; the Kafka
+`governance-decision` schema is unchanged and deliberately not reused).
+
+- `404` — unknown `analysis_id` or `item_id`. `409` — `accept` on an item
+  whose quote is not verified (reject/dispute still allowed). `422` —
+  invalid verdict/body. Demo registry is in-memory (see HACKATHON.md).
+
+## 3e. Voting modes — `POST /candidates/{annotation_id}/vote`
 
 | Mode (`FEN_MOCK_VOTING`) | Semantics |
 |---|---|
