@@ -1,0 +1,215 @@
+{
+  "_kind": "CANDIDATE REGISTER — human-supplied lecture candidates verified against ePSD2. NOT a gold dataset and NOT eval examples: confirmed lemmas become eval/dataset examples only after the human selects attested source texts (T8).",
+  "assembled_at": "2026-10-28",
+  "method": {
+    "lookup_route_planned": "eme-gir ePSD2 MCP (https://epsd2.eme-gir.org/mcp)",
+    "lookup_route_used": "Canonical ePSD2 (Oracc) entry pages — eme-gir is a 1:1 mirror of ePSD2 and its own verification browser instructs to cite Oracc, not the mirror",
+    "fallback_reason": "All five public eme-gir MCP endpoints returned HTTP 502 on 2026-10-28 (checked: epsd2, etcsl, cdli, ogsl, ummia); the canonical ePSD2 pages for the same entries were available",
+    "transcripts": [
+      "Sumerian language - 2 [Russian (auto-generated), DownSub] — grammar and vocabulary lecture; source of all reliable candidates below",
+      "Sumerian language - 1 [English (auto-generated), DownSub] — general information and phonetics; auto-translation distorts forms, no reliable lemma candidates extracted (see video1_mentions)"
+    ]
+  },
+  "candidates": [
+    {
+      "form": "lu₂",
+      "lemma": "lu",
+      "pos": "N",
+      "gloss_en": "person; man",
+      "gloss_ru": "человек, персона",
+      "dataset_role": "lexical_candidate",
+      "status": "dictionary_confirmed",
+      "provenance": {
+        "lecture": "video 2 (grammar)",
+        "context": "Discussion of plural formation types: reduplication lu-lu presented as 'all people, the totality'",
+        "lecture_quote_asr": "широко применялась просто удвоение люлю да это значит все люди какие только есть совокупности какой-то",
+        "asr_note": "Auto-generated Russian subtitles; wording is imperfect, the form identification follows the human's lecture analysis"
+      },
+      "verification": {
+        "source": "ePSD2 (via eme-gir route; canonical Oracc page used)",
+        "entry": "lu [PERSON] (N)",
+        "epsd2_id": "o0033207",
+        "citation_url": "http://oracc.org/epsd2/o0033207",
+        "lookup_url": "http://oracc2004.ub.uni-muenchen.de/epsd2/cbd/sux/o0033207.html",
+        "instances_total": 18895,
+        "senses": [
+          { "sense": "person", "instances": 18745 },
+          { "sense": "man", "instances": 124 },
+          { "sense": "who, which", "instances": 18 },
+          { "sense": "of", "instances": null },
+          { "sense": "ruler", "instances": 8 }
+        ],
+        "main_writings": ["lu₂", "lu", "lu₂-lu₂", "mu-lu"],
+        "license": "CC BY-SA 3.0",
+        "attribution": "ePSD2 / Oracc: electronic Pennsylvania Sumerian Dictionary, 2nd edition (oracc.museum.upenn.edu/epsd2), prepared by Steve Tinney and the Oracc team at the University of Pennsylvania. Data licensed under Creative Commons Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0). Attribution is required; substantial reuses must propagate the ShareAlike license."
+      }
+    },
+    {
+      "form": "lu₂-lu₂",
+      "lemma": "lu",
+      "pos": "N",
+      "gloss_en": "people (totality) — reduplicated form of lu [person]",
+      "gloss_ru": "люди (совокупность) — редуплицированная форма от lu₂",
+      "dataset_role": "linked_form_not_lemma",
+      "status": "attested_form_function_to_confirm",
+      "provenance": {
+        "lecture": "video 2 (grammar)",
+        "context": "Named in the lecture as a plurality/totality device, not as an independent dictionary word",
+        "lecture_quote_asr": "удвоение люлю да это значит все люди какие только есть совокупности какой-то",
+        "asr_note": "Auto-generated Russian subtitles; exact function in context to be confirmed by the human against a grammar"
+      },
+      "verification": {
+        "source": "ePSD2 (via eme-gir route; canonical Oracc page used)",
+        "entry": "lu [PERSON] (N), writing [3] lu₂-lu₂",
+        "epsd2_id": "o0033207",
+        "citation_url": "http://oracc.org/epsd2/o0033207",
+        "instances_total_for_lemma": 18895,
+        "note": "ePSD2 lists lu₂-lu₂ as an attested writing of the lemma lu [person]; it is not a separate headword. Dataset use: morphological example linked to lu₂, never a separate gold lemma.",
+        "license": "CC BY-SA 3.0",
+        "attribution": "ePSD2 / Oracc: electronic Pennsylvania Sumerian Dictionary, 2nd edition (oracc.museum.upenn.edu/epsd2), prepared by Steve Tinney and the Oracc team at the University of Pennsylvania. Data licensed under Creative Commons Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0)."
+      }
+    },
+    {
+      "form": "baḫar",
+      "lemma": "bahar",
+      "pos": "N",
+      "gloss_en": "potter",
+      "gloss_ru": "гончар",
+      "dataset_role": "lexical_candidate",
+      "status": "dictionary_confirmed_gloss_etymology_disputed",
+      "provenance": {
+        "lecture": "video 2 (lexical borrowings / substrate discussion)",
+        "context": "Lecture presents bahar 'potter' as unrelated to the Sumerian word for 'pot' and discusses it under substrate-loan hypotheses; the same lecture later states that substrate words are currently considered unproven",
+        "lecture_quote_asr": "слова бахар карте горшечник никак не связаны с шумерским словом для горшка вероятно это заимствование",
+        "asr_note": "Auto-generated Russian subtitles ('бахар карте' is an ASR artefact); the form follows the human's lecture analysis"
+      },
+      "verification": {
+        "source": "ePSD2 (via eme-gir route; canonical Oracc page used)",
+        "entry": "bahar [POTTER] (N)",
+        "epsd2_id": "o0024835",
+        "citation_url": "http://oracc.org/epsd2/o0024835",
+        "lookup_url": "http://oracc2004.ub.uni-muenchen.de/epsd2/cbd/sux/o0024835.html",
+        "instances_total": 613,
+        "senses": [
+          { "sense": "potter", "instances": 613 }
+        ],
+        "akkadian_equivalent": "pahāru",
+        "main_writings": ["baḫar₂", "baḫar₃", "baḫar₄", "baḫar"],
+        "note": "Only the gloss 'potter' is dictionary-confirmed. Any substrate/borrowing etymology is a disputed hypothesis (also in the lecture itself) and must not be recorded as fact in the dataset.",
+        "license": "CC BY-SA 3.0",
+        "attribution": "ePSD2 / Oracc: electronic Pennsylvania Sumerian Dictionary, 2nd edition (oracc.museum.upenn.edu/epsd2), prepared by Steve Tinney and the Oracc team at the University of Pennsylvania. Data licensed under Creative Commons Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0)."
+      }
+    },
+    {
+      "form": "me",
+      "lemma": "me",
+      "pos": "N",
+      "gloss_en": "Being, divine properties enabling cosmic activity, rites; (cultic) ordinance; office; prayer",
+      "gloss_ru": "бытие; божественные свойства, обеспечивающие действие космоса",
+      "dataset_role": "lexical_candidate",
+      "status": "dictionary_confirmed",
+      "provenance": {
+        "lecture": "video 2 (verb paradigm / to be)",
+        "context": "Lecture distinguishes the nominal use ('a kind of being-ness, magical force') from the verbal use depending on the endings the form takes",
+        "lecture_quote_asr": "если мы оформляется как существительное то она обозначает магическую силу то есть если оно оформляется как глагол то это глагол быть",
+        "asr_note": "Auto-generated Russian subtitles; the noun/verb split follows the human's lecture analysis and is confirmed by two separate ePSD2 headwords"
+      },
+      "verification": {
+        "source": "ePSD2 (via eme-gir route; canonical Oracc page used)",
+        "entry": "me [BEING] (N)",
+        "epsd2_id": "o0034101",
+        "citation_url": "http://oracc.org/epsd2/o0034101",
+        "lookup_url": "http://oracc2004.ub.uni-muenchen.de/epsd2/cbd/sux/o0034101.html",
+        "instances_total": 1174,
+        "senses": [
+          { "sense": "Being, divine properties enabling cosmic activity, rites", "instances": 1136 },
+          { "sense": "(cultic) ordinance", "instances": 29 },
+          { "sense": "office", "instances": 1 },
+          { "sense": "prayer", "instances": 8 }
+        ],
+        "main_writings": ["me", "me-me", "me-e"],
+        "license": "CC BY-SA 3.0",
+        "attribution": "ePSD2 / Oracc: electronic Pennsylvania Sumerian Dictionary, 2nd edition (oracc.museum.upenn.edu/epsd2), prepared by Steve Tinney and the Oracc team at the University of Pennsylvania. Data licensed under Creative Commons Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0)."
+      }
+    },
+    {
+      "form": "me",
+      "lemma": "me",
+      "pos": "V",
+      "gloss_en": "to be",
+      "gloss_ru": "быть",
+      "dataset_role": "lexical_candidate_separate_entry",
+      "status": "dictionary_confirmed_separate_headword",
+      "provenance": {
+        "lecture": "video 2 (verb paradigm / to be)",
+        "context": "Same lecture passage as me [N]: with verbal endings the same form is the verb 'to be'. Kept as a separate candidate entry — the two uses must never be merged into one dataset lemma.",
+        "lecture_quote_asr": "спряжение глагола мы быть то есть эта связка обязательно",
+        "asr_note": "Auto-generated Russian subtitles"
+      },
+      "verification": {
+        "source": "ePSD2 (via eme-gir route; canonical Oracc page used)",
+        "entry": "me [BE] (V/i)",
+        "epsd2_id": "o0034109",
+        "citation_url": "http://oracc.org/epsd2/o0034109",
+        "lookup_url": "http://oracc2004.ub.uni-muenchen.de/epsd2/cbd/sux/o0034109.html",
+        "instances_total": 3919,
+        "senses": [
+          { "sense": "to be", "instances": 3919 }
+        ],
+        "main_writings": ["me", "men₃", "nam", "am₃", "me-en"],
+        "license": "CC BY-SA 3.0",
+        "attribution": "ePSD2 / Oracc: electronic Pennsylvania Sumerian Dictionary, 2nd edition (oracc.museum.upenn.edu/epsd2), prepared by Steve Tinney and the Oracc team at the University of Pennsylvania. Data licensed under Creative Commons Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0)."
+      }
+    }
+  ],
+  "excluded": [
+    {
+      "form": "Enlil",
+      "role": "proper_name",
+      "reason": "Divine name occurring only in the lecture's word-order example ('Enlil directed his gaze at Ningirsu'); not a lexical lemma",
+      "provenance": { "lecture": "video 2 (syntax)" }
+    },
+    {
+      "form": "Ningirsu",
+      "role": "proper_name",
+      "reason": "Divine name in the same word-order example; not a lexical lemma",
+      "provenance": { "lecture": "video 2 (syntax)" }
+    },
+    {
+      "form": "ki-ma",
+      "role": "akkadian_borrowing",
+      "reason": "Named in the lecture as an Akkadian conjunction borrowed into late Sumerian; not a Sumerian lemma without separate verification",
+      "provenance": { "lecture": "video 2 (lexical borrowings)", "lecture_quote_asr": "заимствовать аккадский союз допустим кима и ул" }
+    },
+    {
+      "form": "ul",
+      "role": "akkadian_borrowing_ambiguous_form",
+      "reason": "Named together with ki-ma as an Akkadian borrowing; the form as heard in auto-subtitles is ambiguous. Excluded pending separate verification",
+      "provenance": { "lecture": "video 2 (lexical borrowings)", "lecture_quote_asr": "заимствовать аккадский союз допустим кима и ул" }
+    }
+  ],
+  "video1_mentions_not_candidates": [
+    {
+      "as_heard_in_english_asr": "Sangi ('black-headed people')",
+      "probable_form": "saŋ-gi₆ (to be confirmed)",
+      "reason": "English auto-translated subtitles distort Sumerian forms; recheck against the Russian original with timestamps before any use"
+    },
+    {
+      "as_heard_in_english_asr": "Kay Unger (their own country)",
+      "probable_form": "ki-en-gi (to be confirmed)",
+      "reason": "Same ASR distortion; not a candidate from this transcript"
+    },
+    {
+      "as_heard_in_english_asr": "Duba (their school)",
+      "probable_form": "e-duba (to be confirmed)",
+      "reason": "Mentioned in a general history passage, not as a vocabulary item; ASR form unreliable"
+    },
+    {
+      "as_heard_in_english_asr": "u can mean 10, grass, day",
+      "probable_form": "u (several homophonous lemmas)",
+      "reason": "Homophony illustration in a phonetics discussion; cannot be turned into one lemma candidate without the original wording"
+    }
+  ],
+  "grammar_excluded_by_rule": "All grammatical material from both lectures (cases, pronouns, verbal prefixes/suffixes, plural markers as such) is deliberately not recorded as lemmas; it would add noise to lemma-extraction evaluation (human's rule from the lecture analysis).",
+  "next_step": "Human selects attested source texts (ePSD2/Oracc lines) for lu, bahar, me [N], me [V]; only then are TEMPLATE.json examples with gold quotes created from those texts. Lecture transcripts are provenance for why a lemma was proposed, never gold evidence themselves."
+}

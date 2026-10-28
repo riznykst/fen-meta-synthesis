@@ -170,7 +170,12 @@ never invents corpus data):
 It also reports how many fabricated quotes would have passed without the
 provenance check (the **B0** baseline), which is the comparison that shows
 what the verification layer adds. Results, the test-set size, the model,
-and the date are published in [eval/REPORT.md](eval/REPORT.md). So far the
+and the date are published in [eval/REPORT.md](eval/REPORT.md).
+
+A first candidate register — lecture-derived lemmas (`lu`, `bahar`, `me`)
+checked against ePSD2 — lives in
+[eval/candidates/sumerian-video-candidates.json](eval/candidates/sumerian-video-candidates.json).
+It is provenance for future examples, not gold data. So far the
 harness has been run on a clearly labelled synthetic smoke example only;
 **no corpus figures are reported until they are measured** on the
 human-supplied dataset.
@@ -218,10 +223,10 @@ docs/                   ADRs, provider notes
 
 ## Data and licensing
 
-Source texts used in the demo and evaluation will be listed with their
-origin and license in `eval/dataset/SOURCES.md` before publication (that
-file does not exist yet — no real corpus data is in the repository today;
-the dataset gate is [eval/validate_dataset.py](eval/validate_dataset.py)).
+Source texts and licences are registered in
+[eval/dataset/SOURCES.md](eval/dataset/SOURCES.md). That register exists;
+the human-supplied corpus texts themselves are not in the repository yet
+(the dataset gate is [eval/validate_dataset.py](eval/validate_dataset.py)).
 Check each source's license before reuse.
 
 ## License
