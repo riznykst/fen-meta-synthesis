@@ -115,6 +115,13 @@ Each line names the task commit that introduced it.
   test run (committed tree only) passes the full suites — see the T10
   commit verification.
 
+- Post-T10 frontend improvements (owner-requested): portal navigation now
+  links the Review screen as the hackathon demo entry; the Review screen
+  highlights a proposal's quote inside its source document
+  (`findQuoteRange`/`highlightQuoteHtml`, whitespace-tolerant, escaped);
+  an optional third source document can be added; Playwright e2e covers
+  the Review flow with an intercepted (SYNTHETIC) API.
+
 ## Rule that never moves
 
 The model only *proposes*. No code path assigns a claim the status

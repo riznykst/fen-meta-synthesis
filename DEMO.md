@@ -25,13 +25,15 @@ scenario on your own material — the workflow is dataset-agnostic.
 
 ## 1. Analyse (45 seconds)
 
-1. Leave the reviewer name or set your own.
+1. Leave the reviewer name or set your own. Optionally add a third,
+   conflicting source with **+ Add third document**.
 2. Click **Analyse documents →** and wait for the model.
 3. Observe: every item is labelled **“Proposal — awaiting human decision”**.
    The model has approved nothing.
 4. Each proposal shows its exact quote from the source, the model's
    interpretation *separate from the claim*, uncertainty, and whether the
-   quote was verified in the document.
+   quote was verified in the document. Click **Show in source** on a
+   proposal to see that quote highlighted in the source document.
 5. Find the contradiction card: two claims side by side (use until 1903 vs
    a closure reported in 1901), its type (`temporal_mismatch`) and the
    alternative interpretations the model offered.

@@ -53,6 +53,50 @@
     return "“" + text + "”";
   }
 
+  // Locate `quote` inside `text`, tolerant to whitespace differences:
+  // both sides are whitespace-collapsed while an index map remembers where
+  // each collapsed character came from, so the returned range addresses the
+  // ORIGINAL text. Returns {start, end} or null.
+  function findQuoteRange(text, quote) {
+    var source = String(text == null ? "" : text);
+    var needleRaw = String(quote == null ? "" : quote).trim().replace(/\s+/g, " ");
+    if (!needleRaw) return null;
+    var collapsed = "";
+    var indexMap = [];
+    var pendingSpaceAt = -1;
+    for (var i = 0; i < source.length; i++) {
+      var ch = source[i];
+      if (/\s/.test(ch)) {
+        if (collapsed.length && pendingSpaceAt < 0) pendingSpaceAt = i;
+        continue;
+      }
+      if (pendingSpaceAt >= 0) {
+        collapsed += " ";
+        indexMap.push(pendingSpaceAt);
+        pendingSpaceAt = -1;
+      }
+      collapsed += ch;
+      indexMap.push(i);
+    }
+    var at = collapsed.indexOf(needleRaw);
+    if (at < 0) return null;
+    var start = indexMap[at];
+    var end = indexMap[at + needleRaw.length - 1] + 1;
+    return { start: start, end: end };
+  }
+
+  // Escaped HTML of the document text with the located quote wrapped in
+  // <mark>. The document and the quote are always escaped first — the mark
+  // is the only markup this function emits.
+  function highlightQuoteHtml(text, quote) {
+    var source = String(text == null ? "" : text);
+    var range = findQuoteRange(source, quote);
+    if (!range) return esc(source);
+    return esc(source.slice(0, range.start))
+      + "<mark>" + esc(source.slice(range.start, range.end)) + "</mark>"
+      + esc(source.slice(range.end));
+  }
+
   function errorMessage(status, detail) {
     if (status === 502) {
       return "The model did not respond or returned an answer that could not be read (error 502). "
@@ -98,6 +142,7 @@
       + '<p class="meta">Uncertainty: ' + esc(claim.uncertainty) + " · provenance: " + esc(claim.provenance_status || "") + "</p>"
       + (amb.length ? '<p class="meta">Ambiguities: ' + amb.map(esc).join("; ") + "</p>" : "")
       + quoteNote
+      + '<div class="decision-row"><button class="decision-btn prov" data-action="highlight" data-item="' + esc(claim.claim_id) + '">Show in source</button></div>'
       + decisionButtons(claim.claim_id, "claim", claim)
       + "</article>";
   }
@@ -148,6 +193,8 @@
     renderClaimCard: renderClaimCard,
     renderContradictionCard: renderContradictionCard,
     renderDecisionHistory: renderDecisionHistory,
+    findQuoteRange: findQuoteRange,
+    highlightQuoteHtml: highlightQuoteHtml,
     VERDICT_STATUS: VERDICT_STATUS,
   };
   if (typeof module !== "undefined" && module.exports) {
@@ -160,7 +207,7 @@
   if (typeof document === "undefined") return;
 
   var MOCK = global.fenApiBase ? global.fenApiBase("fen_mock_base", "http://localhost:8100") : "http://localhost:8100";
-  var state = { analysis: null, decisions: [] };
+  var state = { analysis: null, decisions: [], documents: [] };
   function $(id) { return document.getElementById(id); }
 
   async function apiFetch(path, opts) {
@@ -206,8 +253,10 @@
 
   async function runAnalyze() {
     var docs = [];
-    [1, 2].forEach(function (n) {
-      var text = $("doc" + n).value.trim();
+    [1, 2, 3].forEach(function (n) {
+      var field = $("doc" + n);
+      if (!field) return;
+      var text = field.value.trim();
       if (text) docs.push({ document_id: "d" + n, title: $("doc" + n + "Title").value.trim() || null, text: text });
     });
     $("reviewError").textContent = "";
@@ -222,6 +271,7 @@
         body: JSON.stringify({ documents: docs }),
       });
       state.analysis = result;
+      state.documents = docs;
       state.decisions = [];
       renderAll();
     } catch (e) {
@@ -258,6 +308,25 @@
     }
   }
 
+  function showInSource(itemId) {
+    if (!state.analysis) return;
+    var claim = (state.analysis.analysis.claims || []).find(function (c) { return c.claim_id === itemId; });
+    var box = $("sourceView");
+    if (!claim || !box) return;
+    var doc = (state.documents || []).find(function (d) { return d.document_id === claim.document_id; });
+    if (!doc) {
+      box.innerHTML = '<p class="error">Source document ' + esc(claim.document_id) + " is not in this session.</p>";
+      return;
+    }
+    var located = !!findQuoteRange(doc.text, claim.quote);
+    box.innerHTML = "<h3>Source — document " + esc(doc.document_id) + (doc.title ? ": " + esc(doc.title) : "") + "</h3>"
+      + '<p class="source-text">' + highlightQuoteHtml(doc.text, claim.quote) + "</p>"
+      + '<p class="meta">' + (located
+        ? "The highlighted span is the exact quote this proposal points to."
+        : "The quote could not be located in this document — that is why acceptance is disabled.") + "</p>";
+    box.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   async function showProvenance(itemId) {
     var box = $("provenance");
     try {
@@ -279,11 +348,20 @@
   document.addEventListener("DOMContentLoaded", function () {
     if (!$("analyzeBtn")) return;
     $("analyzeBtn").addEventListener("click", runAnalyze);
+    var addDoc = $("addDocBtn");
+    if (addDoc) {
+      addDoc.addEventListener("click", function () {
+        $("doc3Block").style.display = "block";
+        addDoc.style.display = "none";
+        $("doc3").focus();
+      });
+    }
     document.addEventListener("click", function (ev) {
       var btn = ev.target.closest("[data-action]");
       if (!btn || btn.disabled) return;
       if (btn.dataset.action === "decide") decide(btn.dataset.item, btn.dataset.type, btn.dataset.verdict);
       if (btn.dataset.action === "provenance") showProvenance(btn.dataset.item);
+      if (btn.dataset.action === "highlight") showInSource(btn.dataset.item);
     });
   });
 })(typeof window !== "undefined" ? window : globalThis);

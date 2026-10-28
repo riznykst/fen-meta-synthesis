@@ -19,6 +19,9 @@
   textarea { min-height:84px; resize:vertical; }
   .btn { width:100%; min-height:44px; padding:10px 0; border-radius:8px; border:none; background:#2d5a8e; color:#fff; font-weight:700; font-size:13px; letter-spacing:.04em; cursor:pointer; margin-top:14px; }
   .btn:disabled { opacity:.55; cursor:not-allowed; }
+  .btn.secondary { background:#fff; color:#2d5a8e; border:1.5px solid #2d5a8e; margin-top:10px; }
+  mark { background:#ffe58a; padding:0 2px; border-radius:2px; }
+  .source-text { white-space:pre-wrap; font-size:12.5px; line-height:1.6; background:#fff; border:1px solid #e3ded2; border-radius:8px; padding:10px 12px; }
   .badge { display:inline-block; padding:2px 7px; border-radius:3px; font-size:10px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
   .b-gr { color:#2e7d5b; background:#e6f4ee; } .b-rd { color:#b23a3a; background:#fae8e8; } .b-gd { color:#8b6914; background:#faf3e0; } .b-bl { color:#2d5a8e; background:#e8eff7; }
   .item { border:1px solid #e3ded2; border-radius:10px; padding:12px; background:#fff; margin-bottom:12px; }
@@ -75,6 +78,13 @@
     <input id="doc2Title" value="Archive note">
     <label class="lbl" for="doc2">Document 2 text</label>
     <textarea id="doc2">A 1901 archive note states that the Sokolowizna crossing closed after the bridge was built downstream.</textarea>
+    <div id="doc3Block" style="display:none">
+      <label class="lbl" for="doc3Title">Document 3 title (optional)</label>
+      <input id="doc3Title" placeholder="e.g. A third, conflicting source">
+      <label class="lbl" for="doc3">Document 3 text (optional)</label>
+      <textarea id="doc3" placeholder="Paste a third source that may agree or conflict with the first two"></textarea>
+    </div>
+    <button class="btn secondary" id="addDocBtn" type="button">+ Add third document</button>
     <p class="meta">Pre-filled documents are a synthetic demo example — replace them with your own sources. Documents are sent to the model service for analysis.</p>
     <button class="btn" id="analyzeBtn">Analyse documents →</button>
     <div class="state" id="analyzeState" role="status"></div>
@@ -89,6 +99,7 @@
 
   <section class="panel" aria-label="Provenance and history">
     <h2>3 · Provenance &amp; decision history</h2>
+    <div id="sourceView"><p class="note">Select “Show in source” on a proposal to see its quote highlighted in the source document.</p></div>
     <div id="provenance"><p class="note">Select “Provenance” on a proposal to see document → quote → model proposal → decisions.</p></div>
     <h3 style="font-family:Georgia,serif;font-weight:400">Decisions in this session</h3>
     <div id="history"><p class="note">No human decisions yet — every item above is still a proposal.</p></div>
