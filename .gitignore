@@ -23,3 +23,15 @@ test-results/
 playwright-report/
 .vercel
 .env*
+
+# Secrets and keys (never commit; keys live in env vars only)
+*.key
+*.pem
+*.p12
+id_rsa*
+id_ed25519*
+
+# Local run artifacts: live model responses and parse-failure dumps.
+# Committed only after explicit human review (SPEC 0.6; eval/results/ is
+# the curated, metrics-only exception and is NOT under this directory.)
+artifacts/

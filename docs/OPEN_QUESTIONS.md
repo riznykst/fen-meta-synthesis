@@ -58,4 +58,6 @@ persistence beyond process lifetime is out of scope for the demo.
 `artifacts/meta/*.json` contain real model responses. SPEC section 0.6:
 they may be committed only after human review. The two artifacts produced
 on 2026-10-28 were shown to the human; explicit "commit them" approval is
-still required before T10 includes them in git.
+still required before they enter git. Status at T10: `artifacts/` is
+gitignored, both files were verified to contain no API key, and they stay
+local until the human approves committing them.

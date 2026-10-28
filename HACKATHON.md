@@ -105,6 +105,15 @@ Each line names the task commit that introduced it.
   one-command launcher `scripts/start_demo.py` (+ `scripts/demo_seed.sh`
   wrapper; verified end-to-end live 2026-10-28), and the README
   "Hackathon Scope" section.
+- T10 — Hygiene: `.gitignore` covers `.env`, key material and `artifacts/`
+  (live responses stay local until human-approved, Q8). Secret scan
+  2026-10-28: gitleaks is not installed in this environment, so the
+  equivalent manual scan was run — the owner's actual API key string and
+  long Bearer-token patterns were searched across all 216 commits of git
+  history and both local artifacts: **0 hits**. `LICENSE` (Apache-2.0) is
+  in place; data-licence gating lives in the T8 validator. A clean-export
+  test run (committed tree only) passes the full suites — see the T10
+  commit verification.
 
 ## Rule that never moves
 
