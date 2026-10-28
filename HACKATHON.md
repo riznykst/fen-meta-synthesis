@@ -81,6 +81,12 @@ Each line names the task commit that introduced it.
 - T5 — Provenance: `GET /provenance/{item_id}` returns the full chain
   (document, quotes, model proposal with `prompt_hash` and time, all human
   decisions in order); unknown id -> 404.
+- T6 — Review screen: `web/portal/review.html` + `review.js` (zero-build,
+  triadic style): document input, model-waiting state, proposal cards,
+  contradiction cards (both claims, kind, alternative interpretations),
+  red unverified-quote cards with Accept disabled, decision history +
+  provenance panel, plain-language 502 text. Buttons >= 44 px, responsive
+  at 390 px. 10 Node tests on the pure render/status functions.
 - Quality measurements (T7) and the second-provider comparison (Baseten,
   `muse-spark-open-1026`) are **planned** until a real dataset (T8, supplied
   by the human) and provider access exist.
