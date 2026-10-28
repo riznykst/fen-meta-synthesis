@@ -87,9 +87,15 @@ Each line names the task commit that introduced it.
   red unverified-quote cards with Accept disabled, decision history +
   provenance panel, plain-language 502 text. Buttons >= 44 px, responsive
   at 390 px. 10 Node tests on the pure render/status functions.
-- Quality measurements (T7) and the second-provider comparison (Baseten,
-  `muse-spark-open-1026`) are **planned** until a real dataset (T8, supplied
-  by the human) and provider access exist.
+- T7 — Measurements: `eval/run_eval.py` computes json_valid_rate,
+  quote_verified_rate, claim recall/precision, contradiction recall and
+  false-positive rate (quote matching: normalised equality or token
+  overlap >= 0.8), plus the B0 baseline (unverified share that would pass
+  without provenance checking). First runs exist on the SYNTHETIC smoke
+  example only (fixture + one live Meta run, 2026-10-28) — harness proof,
+  not corpus quality; see `eval/REPORT.md`. Real measurements await the
+  human-supplied dataset (T8); the B1 Baseten comparison awaits access
+  (OPEN_QUESTIONS Q4).
 - Real Sumerian corpus and gold standards: supplied by the human only (T8);
   the agent never generates them.
 

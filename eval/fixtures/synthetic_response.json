@@ -1,0 +1,54 @@
+{
+  "claims": [
+    {
+      "claim_id": "c1",
+      "quote": "The hill Koshary marks the old trade route",
+      "statement": "The hill Koshary marks the old trade route",
+      "interpretation": "The hill served as a route landmark.",
+      "document_id": "d1",
+      "ambiguities": [],
+      "uncertainty": "low",
+      "review_recommendation": "proceed_to_human_review"
+    },
+    {
+      "claim_id": "c3",
+      "quote": "The river crossing at Sokolowizna was used by traders until 1903",
+      "statement": "The crossing was used by traders until 1903",
+      "interpretation": "Trader use continued to 1903.",
+      "document_id": "d1",
+      "ambiguities": [],
+      "uncertainty": "high",
+      "review_recommendation": "needs_expert_review"
+    },
+    {
+      "claim_id": "c4",
+      "quote": "A 1901 archive note states that the Sokolowizna crossing closed after the bridge was built downstream",
+      "statement": "A 1901 note reports the crossing closed",
+      "interpretation": "The crossing closed around 1901.",
+      "document_id": "d2",
+      "ambiguities": [],
+      "uncertainty": "medium",
+      "review_recommendation": "needs_expert_review"
+    },
+    {
+      "claim_id": "c9",
+      "quote": "Traders paid a toll of exactly fifty silver coins at the crossing",
+      "statement": "A toll of fifty silver coins was paid",
+      "interpretation": "A fabricated detail used to test the provenance gate.",
+      "document_id": "d1",
+      "ambiguities": [],
+      "uncertainty": "high",
+      "review_recommendation": "more_evidence_required"
+    }
+  ],
+  "contradictions": [
+    {
+      "contradiction_id": "x1",
+      "claim_ids": ["c3", "c4"],
+      "kind": "temporal_mismatch",
+      "explanation": "Use until 1903 vs closure reported in 1901.",
+      "alternative_interpretations": ["The closure may have taken effect later."]
+    }
+  ],
+  "summary": "SYNTHETIC fixture"
+}

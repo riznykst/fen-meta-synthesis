@@ -1,0 +1,30 @@
+{
+  "_kind": "SYNTHETIC smoke example for the eval harness — neutral invented text, NOT corpus data, NOT gold standards (real dataset: T8, supplied by the human)",
+  "example_id": "synthetic-smoke-1",
+  "documents": [
+    {
+      "document_id": "d1",
+      "title": "Local oral tradition (synthetic)",
+      "text": "The hill Koshary marks the old trade route. In the local oral tradition, the hill Koshary is known as a landmark for traders. The river crossing at Sokolowizna was used by traders until 1903."
+    },
+    {
+      "document_id": "d2",
+      "title": "Archive note (synthetic)",
+      "text": "A 1901 archive note states that the Sokolowizna crossing closed after the bridge was built downstream."
+    }
+  ],
+  "gold_claims": [
+    { "quote": "The hill Koshary marks the old trade route" },
+    { "quote": "The river crossing at Sokolowizna was used by traders until 1903" },
+    { "quote": "A 1901 archive note states that the Sokolowizna crossing closed after the bridge was built downstream" }
+  ],
+  "gold_contradictions": [
+    {
+      "claim_quotes": [
+        "The river crossing at Sokolowizna was used by traders until 1903",
+        "A 1901 archive note states that the Sokolowizna crossing closed after the bridge was built downstream"
+      ],
+      "kind": "temporal_mismatch"
+    }
+  ]
+}
