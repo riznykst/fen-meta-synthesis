@@ -1,602 +1,234 @@
-> **Hackathon branch — FEN × Meta: Human-Governed AI Synthesis** (Meta Global AI Developer Hackathon, submission deadline 4 Nov 2026).
-> On this branch, a Meta model (`muse-spark-1.3`) extracts claims and contradictions from source documents, the system automatically verifies every quote, and a human accepts, rejects or disputes each proposal — the decision is recorded with its full provenance. **The model proposes; it never decides.**
-> **Start here:** [DEMO.md](DEMO.md) (3-minute scenario) · [HACKATHON.md](HACKATHON.md) (what is hackathon work vs. pre-existing) · [eval/REPORT.md](eval/REPORT.md) (measurements) · [docs/OPEN_QUESTIONS.md](docs/OPEN_QUESTIONS.md)
-> Pre-hackathon baseline: tag `baseline-pre-hackathon`. The project description below is the underlying research prototype this branch builds on.
+# FEN × Meta — Human-Governed AI Synthesis
 
----
+**AI proposes. Humans decide. Every decision keeps its provenance.**
 
-# FEN — Triadic Synthesis Framework
+FEN × Meta extends the open-source FEN Triadic Synthesis research prototype
+for the Meta Global AI Developer Hackathon. It adds one focused, end-to-end
+workflow: a Meta model reads several source documents, extracts claims with
+verbatim quotes, flags contradictions between sources, and hands the result
+to a human reviewer. The reviewer accepts, rejects, or disputes each item,
+and the decision is recorded together with the source, the model, and the
+prompt that produced the proposal.
 
-**A research prototype and reference architecture for a federated epistemic validation layer for community-governed linguistic knowledge** — designed to integrate with the [GRAPHIA](https://graphia-ssh.eu/) SSH Knowledge Graph as an autonomous federation node.
+Status: work in progress during the hackathon. See
+[Project status](#project-status) for what is implemented, what is planned,
+and what remains simulated.
 
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![DOI](https://img.shields.io/badge/DOI-10.23726%2Fcij.2026.1829-blue.svg)](https://doi.org/10.23726/cij.2026.1829)
-[![Status](https://img.shields.io/badge/status-Research%20MVP-green.svg)](#status)
-[![GRAPHIA](https://img.shields.io/badge/integrates%20with-GRAPHIA%20D2.2-informational.svg)](docs/FEN-Whitepaper-Triadic-Synthesis.pdf)
-[![Tests](https://img.shields.io/badge/tests-125%20pytest%20%2B%2018%20Node%20%2B%205%20UI-brightgreen.svg)](#status)
-[![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](#status)
+## The problem
 
-> **Status: Research MVP — runnable locally via `docker compose up`; live GRAPHIA integration pending.**
+Researchers who work with conflicting sources (for example, different
+dictionaries or archives that define the same term differently) spend hours
+reconciling them by hand. A general-purpose chatbot can summarize the
+sources, but it hides where each statement came from and can invent quotes.
+FEN × Meta keeps the model in the role of an assistant: it can only
+recommend, every recommendation points to an exact quote, and a human holds
+the final decision.
 
----
-
-## Research entry point
-
-**Research question:** *How can AI-assisted knowledge synthesis remain
-community-governed without transferring epistemic authority to the AI system?*
-
-**Core idea:**
-
-> **AI scaffolds. Community decides. The knowledge graph records.**
-
-This repository is the runnable companion implementation of:
-
-> Riznyk, V. — Independent Researcher, Flensburg, Germany (2026).
-> *Decentralised Agentic Governance: A Methodology for Community-Owned
-> Linguistic Datasets and Knowledge Synthesis*. CERN IdeaSquare Journal of
-> Experimental Innovation, **10**(2), 177–185 — Special Issue on Co-Creation,
-> section *Part 3: Co-Creating with Machines*. **Published** (16 September 2026)
-> — DOI [10.23726/cij.2026.1829](https://doi.org/10.23726/cij.2026.1829),
-> CC BY 4.0. Keywords: Quadratic Voting, Agentic Governance, Decentralized
-> Autonomous Organizations (DAO), Linguistic Commons, Knowledge Hypergraphs,
-> AI Ethics.
-
-**The architecture answers the question with a hard boundary** — the same
-boundary the paper argues for (epistemic assistance ≠ epistemic authority):
+## How it works
 
 ```text
-        AI                     Community                 Knowledge Graph
-        │                      │                         │
-        ▼                      ▼                         ▼
-   SCAFFOLD            →   CONSENSUS            →    REGISTRY
-   AI-assisted              community judgment        RDF / provenance
-   epistemic                governance (QV,           persistent record
-   structuring              reputation, delegation)   (gfen:, PID, anchor)
+documents ──► Meta model ──► structured analysis ──► deterministic checks ──► human review ──► registry
+              (claims,         (claims, quotes,       (quote located in       (accept /        (decision +
+               contradictions)  contradictions)        its source)             reject /         provenance)
+                                                                               dispute)
 ```
 
-AI participates in structuring. The community retains judgment. The
-knowledge graph keeps institutional memory. The ledger anchors integrity —
-nothing more ([ADR-001](docs/adr/ADR-001-rdf-anchoring-not-full-onchain.md)).
+- **Input.** Two or three source documents, each with a `document_id`.
+- **Analysis.** A Meta model returns JSON: atomic claims — each with a
+  verbatim `quote`, a `statement` of the claim, and the model's
+  `interpretation` kept separate from the claim itself, plus stated
+  `ambiguities`, an `uncertainty` level
+  (`low | medium | high | insufficient_evidence`) and a review
+  recommendation — and contradictions between claims, including alternative
+  interpretations ("this may not be a conflict if…").
+- **Checks without the model.** The system verifies that every quote can be
+  located in its source document (exact or whitespace-normalised substring),
+  that every contradiction references existing claims, and that claim and
+  contradiction identifiers are unique. Provenance therefore does not
+  depend on trusting the model. (SHACL validation applies to the baseline
+  scaffolding triples, not to analysis claims.)
+- **Human review.** The reviewer sees each proposal with its exact source
+  quote and its verification status. A claim whose quote cannot be verified
+  is marked red and **cannot be accepted** (the UI disables Accept and the
+  API returns 409).
+- **Record.** The decision is stored with the reviewer, verdict, comment,
+  timestamp, model, and prompt hash, and is published as a `review-decision`
+  event (demo event log / injectable publisher in this hackathon build —
+  see [Limitations](#limitations)).
 
-### Research lineage
+The model never sets a final status. `accepted`, `rejected`, and `disputed`
+exist only after a human decision.
 
-```text
-PAPER         Decentralised Agentic Governance (2026, published — CERN
-              IdeaSquare J. Exp. Innovation, DOI 10.23726/cij.2026.1829)
-   │
-   ▼
-FRAMEWORK     Triadic Synthesis — Scaffold → Consensus → Registry
-   │
-   ▼
-SYSTEM        Federated Epistemic Node (FEN)
-   │
-   ▼
-IMPLEMENTATION  Kafka + RDF + mock DAO + PID + Web UI (this repository)
-   │
-   ▼
-EVALUATION    GRAPHIA integration + community validation study (next phase)
-```
+## What is new in this hackathon
 
----
+| Area | Contribution |
+|---|---|
+| Meta integration | Calls to the Meta Model API through the existing OpenAI-compatible client; request, response, returned model, and token usage are captured in sanitised artifacts (kept local until human-reviewed, see [HACKATHON.md](HACKATHON.md)) |
+| Analysis contract | Pydantic models and a generated JSON Schema for claims, contradictions, and quotes ([services/common/analysis.py](services/common/analysis.py), [schemas/analysis/](schemas/analysis/)) |
+| Provenance checks | Verbatim quote verification and contradiction integrity checks ([services/common/analyze.py](services/common/analyze.py)) |
+| Review screen | A lightweight review interface built on the existing static portal ([web/portal/review.html](web/portal/review.html)) |
+| Decision trail | Recording of reviewer decisions and a provenance chain from source to decision (`POST /decisions`, `GET /provenance/{item_id}`) |
+| Evaluation | An evaluation runner and report ([eval/](eval/)) over a human-labelled test set once the human supplies it |
 
-## What this is
+## Project status
 
-GRAPHIA's SSH Knowledge Graph is a **federation of autonomous knowledge graphs** — "a set of autonomous knowledge graphs, each keeping its own governance and data" ([GRAPHIA, 1 September 2026](https://graphia-ssh.eu/news-blog/graphias-ssh-federation-the-gotriple-knowledge-graph-goes-live/)) — and GRAPHIA's own ontology deliverable states the same principle at the data level: *"Each graph remains responsible for the provenance, persistence, and quality of its own data"* (GRAPHIA D2.1, p. 18). LUMEN's data model draws the boundary in the same place: a community exposes a **Data Product** governed by a **Data Contract**, while "communities remain fully responsible for the internal curation and structure of the encapsulated resources" (LUMEN D4.2, p. 18).
+Legend: **Done** is implemented and covered by tests. **In progress** and
+**Planned** are not yet claimed as working. **Simulated** means it exists
+only as a stand-in.
 
-That leaves one question deliberately open, and it is the question this project investigates:
+| Component | Status |
+|---|---|
+| Kafka → RDF registry → PID → web portal pipeline (pre-hackathon baseline) | Done |
+| Agentic scaffolding of a single statement into a triple with SHACL validation (baseline) | Done |
+| Simulated DAO voting (quadratic voting) (baseline) | Simulated |
+| Analysis contract and quote verification | Done — implemented **during** the hackathon (see boundary note below) |
+| Live call to the Meta Model API through FEN | Done — verified live on 2026-10-28 (`muse-spark-1.3`); artifacts local pending human-reviewed commit |
+| `POST /analyze` endpoint | Done |
+| Review screen | Done |
+| Decision recording and provenance endpoint | Done (demo-scope in-memory registry) |
+| Evaluation harness and B0 baseline | Done |
+| Evaluation on the human-labelled corpus; Baseten B1 comparison | Planned — awaiting dataset (T8) and provider access |
 
-> **When a node contributes AI-extracted knowledge, how was it validated — by a community, by experts, or by an automated pipeline — and where is that judgement recorded?**
+This table is updated with every task commit. Nothing is listed as done
+without a test or a reproducible run. Current suites on this branch:
+**185 pytest + 28 Node tests**, all passing (baseline was 125 + 18).
 
-The published architecture does not require a node to *declare* its validation method, and D2.1 notes that the governance rules for ontology extensions "have not been defined at the time of writing" (p. 26). Machine-extracted content is meanwhile on its way into the shared graph: the GoTriple KG will include "entities extracted from the full text of documents by AI and NLP-powered services developed in GRAPHIA" (D2.1, p. 27), while the WP4 modules themselves publish their error rates.
+## Before vs. during the hackathon
 
-FEN (Federated Epistemic Node) is a **node-side reference implementation** of one answer to that question, in a three-phase pipeline:
+FEN Triadic Synthesis existed as a public research prototype before the
+hackathon. To keep the boundary verifiable:
 
-1. **Agentic Scaffolding** — an AI agent guides contributors in structuring linguistic knowledge, without ever deciding on their behalf (a separate FEN-side project, external to this repository — ADR-002).
-2. **Decentralised Validation** — a DAO, using Quadratic Voting and reputation-weighted review, decides whether a candidate entity is accepted, disputed, or rejected. The community remains the final arbiter of meaning.
-3. **Immutable Integration** — the governance decision is anchored by hash only (ADR-001; the MVP writes a **simulated** `0xMOCK` anchor until a real ledger is connected — see the implementation-status table below) and exposed as a dereferenceable PID ([ADR-003](docs/adr/ADR-003-fen-pid-scheme.md)), while the underlying content stays in GRAPHIA's authoritative RDF store.
+- The git tag `baseline-pre-hackathon` marks the last commit before the
+  development period (`8c1164d`).
+- An earlier draft of this README described the analysis contract and a
+  review-screen mock-up as drafted before the development period. **The
+  repository audit did not confirm that**: no such patch or files existed
+  at the baseline (recorded as Q1 in
+  [docs/OPEN_QUESTIONS.md](docs/OPEN_QUESTIONS.md)). The analysis contract,
+  its JSON Schema and tests, and the Review screen were therefore
+  implemented **during** the hackathon and are not claimed as prior work.
+- [HACKATHON.md](HACKATHON.md) lists, per commit, what belongs to which
+  side of the boundary.
+- Features that are not fully integrated are labelled simulated or planned.
 
-**FEN does not replace or modify any part of GRAPHIA's core infrastructure**, and it does not claim that the federation lacks governance — GRAPHIA's Rulebook (T5.1) covers governance, roles and scope, and the Federation Steering Group is the authority. What this repository offers is the *node side* of that division of labour: a contribution that says how it was validated, and keeps what was rejected. It connects as an external federation node — the pattern GRAPHIA already uses for OpenCitations, GESIS and ORKG — through three routes:
+## Quick start
 
-| Integration route | What it is | Status |
-|---|---|---|
-| **Event bus (Kafka)** — [ADR-002](docs/adr/ADR-002-federation-node-not-embedded.md) | the FEN Bridge + Validation Result Consumer on `dap.entities.pending_validation.v1` / `fen.governance.decisions.v1` / `dap.entities.validated.v1` | ✅ implemented; exercised end to end against the real Docker stack in CI |
-| **SKG-IF extension** | the `gfen:` vocabulary offered as a *community-validation* extension of the SKG-IF Ontology (`skg-o`) — the same kind of artefact as the GRAPHIA Ontology itself, which D2.1 defines as "an extension for SSH of SKG Ontology" (p. 22); SKG-IF's extension process is public (<https://skg-if.github.io/extensions/>) | 🟦 draft package staged in [`integrations/skg-if-extension/`](integrations/skg-if-extension/README.md) — **not submitted**; the `cvkg:` IRIs resolve only after RDA WG acceptance |
-| **Data Contract (ODCS)** | the node presented as a LUMEN-style **Data Product** with a machine-actionable **Data Contract**, declaring its validation semantics where LUMEN's own profile allows it (`customProperties` — "extension mechanism for governance metadata not covered by standard fields" — and `quality[]`) | 🟦 design mapped against LUMEN D4.2; no contract published yet |
-
-## Why it matters
-
-> Current industrial paradigms largely treat language as a raw resource, harvested at scale with limited regard for cultural context or community agency.
-
-This project is the applied counterpart to the academic paper *"Decentralised Agentic Governance: A Methodology for Community-Owned Linguistic Datasets and Knowledge Synthesis"* (Riznyk, 2026), **published** in the CERN IdeaSquare Journal of Experimental Innovation (DOI [10.23726/cij.2026.1829](https://doi.org/10.23726/cij.2026.1829)) and not included in this repository. The consortium-facing [`docs/FEN-Whitepaper-Triadic-Synthesis.pdf`](docs/FEN-Whitepaper-Triadic-Synthesis.pdf) summarises that framework specifically for the GRAPHIA integration proposal — read it first if you're evaluating this repo on behalf of the consortium.
-
-## User stories
-
-Two typical use cases — a community contributor of a low-resource-language
-entity and a general dataset owner — are described in
-[`docs/user-stories.md`](docs/user-stories.md).
-
-## Architecture at a glance
-
-```
-doc.normalized.v1
-     │
-     ▼
-[ Entity & Relation Extraction ]     (existing GRAPHIA WP4 service)
-     │  emits candidates, status = pending
-     ▼
-dap.entities.pending_validation.v1
-     │
-     ▼
-[ FEN Bridge — outbound ]            (new DAP microservice — this repo)
-     │  forwards batches to the FEN API
-     ▼
-   [ Agentic Scaffolding → DAO / Quadratic Voting ]
-     │  governance decision, asynchronous callback
-     ▼
-[ FEN Bridge — webhook ]             (validates + republishes to Kafka)
-     │
-     ▼
-fen.governance.decisions.v1
-     │
-     ▼
-[ Validation Result Consumer ]       (new DAP microservice — this repo)
-     │  updates gfen:validationStatus in the named graph
-     ▼
-dap.entities.validated.v1  →  Publisher (unchanged)  →  Virtuoso (GoTriple KG)
-```
-
-Candidates are published immediately with `gfen:pending` — the pipeline never blocks on a vote. See the [whitepaper](docs/FEN-Whitepaper-Triadic-Synthesis.pdf), §4, for the full flow and the [architecture doc](docs/architecture.md) for details.
-
-## Running locally
+Requirements: Python 3.10+ (verified locally on 3.10.4), Node.js 22, and
+Docker only for the full pre-hackathon stack.
 
 ```bash
+git clone https://github.com/riznykst/fen-triadic-synthesis
+cd fen-triadic-synthesis
+git checkout hackathon/meta-ai-synthesis
 
-cp .env.example .env          # optional — docker-compose.yml has working in-container defaults
-docker compose up --build
-```
-
-This starts Kafka, a Fuseki instance (SPARQL 1.1 stand-in for Virtuoso — see
-`docker-compose.yml`'s comment), the mock DAO, and all FEN Bridge/consumer
-processes. Once the stack is up, run the end-to-end smoke test
-(`scripts/smoke_test.py`, also wired up as the CI `e2e` job): it publishes one
-`EntityCandidate` (see `schemas/kafka-events/entity-candidate.schema.json` for
-the shape) onto `dap.entities.pending_validation.v1`, waits for the governance
-decision, checks the named graph, and verifies the `dap.entities.validated.v1`
-confirmation:
-
-```bash
-docker compose up --build
-# in a second terminal:
-python scripts/smoke_test.py
-```
-
-Observability: Prometheus on http://localhost:9090 and Grafana on
-http://localhost:3000 (dashboard "FEN — Validation Pipeline Overview",
-anonymous access) — `docker compose up` starts both.
-
-Optional: verify SPARQL dialect compatibility against a real Virtuoso (the
-engine named in the D2.2 architecture) before touching GRAPHIA's instance:
-
-```bash
-docker compose --profile virtuoso up -d virtuoso
-python scripts/virtuoso_dialect_check.py   # PASSED == dialect + idempotency OK
-```
-
-> **Store note (2026-09).** The first fully implemented node of the SSH KG
-> federation — the GoTriple Knowledge Graph, live since 1 September 2026 — is
-> served **read-only** and runs on **QLever** (SPARQL 1.1,
-> `https://kg-api.gotriple.eu/docs`), not Virtuoso. That does not change the
-> plan (the dialect check still targets the engine the D2.2 DAP writes to), but
-> it matters for the integration contract below: a read-only public graph
-> cannot accept `gfen:` validation writes at all, which is exactly the
-> constraint ADR-002 assumes. This is not a deviation from the architecture:
-> D2.2 §5.2.5 already planned a QLever feasibility study for a read-optimised
-> engine alongside the Virtuoso core, and GRAPHIA WP2 has since published its
-> [QLever Evaluation Report](https://zenodo.org/records/20019957)
-> (Homo & Darty, 2026; DOI 10.5281/zenodo.20019957).
-
-> **CI blocked by GitHub billing?** If Actions jobs fail with *"recent account
-> payments have failed or your spending limit needs to be increased"*, use a
-> self-hosted runner — see [`docs/self-hosted-runner.md`](docs/self-hosted-runner.md).
-
-To run the test suite without Docker (no live Kafka or SPARQL endpoint needed —
-everything is mocked or in-memory):
-
-```bash
 pip install -r requirements-common.txt
-python scripts/generate_schemas.py   # only needed after changing services/common/messages.py
-pytest -q
+python -m pytest -q
+node --test web/tests/*.test.js
 ```
 
-## Hackathon Scope (FEN × Meta, Oct–Nov 2026)
+Three-minute demo (no Docker, no Kafka needed):
 
-Built on branch `hackathon/meta-ai-synthesis` (baseline tag
-`baseline-pre-hackathon` on the pre-hackathon `main`). The full boundary —
-what existed before, what was built during the event, and what stays
-simulated — is recorded in [HACKATHON.md](HACKATHON.md); unresolved
-questions are in [docs/OPEN_QUESTIONS.md](docs/OPEN_QUESTIONS.md).
+```bash
+python scripts/start_demo.py
+# open http://127.0.0.1:8082/web/portal/review.html and follow DEMO.md
+```
 
-**Implemented and tested during the hackathon** (each item has unit tests
-and was run live against the Meta Model API on 2026-10-28): a real Meta
-integration through the existing OpenAI-compatible client
-(`muse-spark-1.3`, `https://api.meta.ai/v1`; see
-[docs/PROVIDERS.md](docs/PROVIDERS.md)); provenance-aware `POST /analyze`
-(claims with exact quotes kept separate from model interpretations,
-contradictions, automatic quote verification); human-only
-`POST /decisions` (accept/reject/dispute; an unverified quote cannot be
-accepted; decisions are immutable); `GET /provenance/{item_id}` (document
-→ quote → model proposal → human decisions); the Review screen
-([web/portal/review.html](web/portal/review.html)); and the evaluation
-harness with the B0 no-verification baseline
-([eval/REPORT.md](eval/REPORT.md)).
+Full stack (Kafka, Fuseki, services, portal):
 
-**Simulated / not yet real:** the DAO behind `mock_fen_api/` remains a
-simulation (ADR-002); the decisions registry is an in-memory demo store;
-committed artifacts in `artifacts/` are withheld pending human review;
-corpus quality numbers await the human-supplied dataset (the agent
-supplies only the template and validator — no invented data), and the
-Baseten B1 comparison awaits provider access.
+```bash
+docker compose up
+```
 
-Try it in 3 minutes: [DEMO.md](DEMO.md) (`python scripts/start_demo.py`).
+## Configuring the model provider
+
+The LLM client works with any OpenAI-compatible endpoint. Set these
+variables in your environment (never commit them):
+
+```bash
+export FEN_LLM_BASE_URL="https://api.meta.ai/v1"   # Meta Model API (confirmed live 2026-10-28)
+export FEN_LLM_API_KEY="<your key>"
+export FEN_LLM_MODEL="muse-spark-1.3"              # confirmed in the provider dashboard and by live calls
+```
+
+Switching between the Meta Model API and an open-weights deployment is a
+configuration change; see [docs/PROVIDERS.md](docs/PROVIDERS.md).
+
+## Evaluation
+
+The evaluation harness lives in [eval/](eval/). It measures, on a small
+hand-labelled set of source documents (supplied by the human — the agent
+never invents corpus data):
+
+- **JSON validity rate:** how often the model returns a parseable analysis.
+- **Quote verification rate:** the share of claims whose quote is located
+  in the source.
+- **Claim recall and precision** against the labelled claims.
+- **Contradiction recall and false-positive rate** against the labelled
+  contradictions.
+
+It also reports how many fabricated quotes would have passed without the
+provenance check (the **B0** baseline), which is the comparison that shows
+what the verification layer adds. Results, the test-set size, the model,
+and the date are published in [eval/REPORT.md](eval/REPORT.md). So far the
+harness has been run on a clearly labelled synthetic smoke example only;
+**no corpus figures are reported until they are measured** on the
+human-supplied dataset.
 
 ## Repository layout
 
-```
-fen-triadic-synthesis/
-├── README.md                       ← you are here
-├── CHANGELOG.md                     dated record of notable changes
-├── CITATION.cff                     machine-readable citation metadata (research artifact)
-├── SECURITY.md                      vulnerability reporting + current security posture
-├── CONTRIBUTING.md                  how to contribute (roadmap + honesty contract)
-├── CODE_OF_CONDUCT.md               community standards (Contributor Covenant 2.1)
-├── LICENSE                          Apache 2.0
-├── docker-compose.yml                full local dev stack (Kafka, Fuseki, all services; optional Virtuoso profile)
-├── .env.example                      every configurable env var, with local-dev defaults
-├── requirements-common.txt           combined deps for running tests locally
-├── .github/
-│   └── workflows/ci.yml              CI: unit tests + docker-compose e2e on the self-hosted runner (matrix temporarily 3.10; full 3.10–3.12 after the GitHub billing issue is resolved)
-├── docs/
-│   ├── FEN-Whitepaper-Triadic-Synthesis.pdf   consortium-facing integration proposal
-│   ├── architecture.md               quick-reference diagrams + component map
-│   ├── adr/
-│   │   ├── ADR-001-rdf-anchoring-not-full-onchain.md
-│   │   ├── ADR-002-federation-node-not-embedded.md
-│   │   ├── ADR-003-fen-pid-scheme.md
-│   │   ├── ADR-004-llm-judge-decision-support-only.md
-│   │   ├── ADR-005-participation-model-and-dao-threshold.md
-│   │   └── ADR-006-tokenless-challenge-window.md (draft)
-│   ├── user-stories.md               two typical use cases for the validation layer
-│   ├── self-hosted-runner.md        CI workaround while GitHub billing blocks Actions
-│   ├── applicability-and-limits.md  where the validation layer fits and where it does not
-│   ├── integration-verification-plan.md  how to prove real GRAPHIA + NAAN integration
-│   ├── BACKLOG.md                    feature roadmap (Top-10 recommendations + status)
-│   ├── images/
-│   │   ├── story1-validation-flow.svg     user-story infographic (community validation flow)
-│   │   ├── story2-validation-overlay.svg  user-story infographic (validation overlay)
-│   │   └── widget-overview.svg          Flow 2 widget data-flow infographic
-│   ├── ontology/
-│   │   ├── fen-ontology.ttl          the gfen: namespace
-│   │   └── fen-shapes.ttl            SHACL shapes for gfen: (ADR-001/003)
-│   └── research/
-│       └── graphia-tech-stack-2026-08.pdf   GRAPHIA tech-stack research (source for the audit)
-├── schemas/
-│   └── kafka-events/                 JSON Schemas, generated from services/common/messages.py
-│       ├── entity-candidate.schema.json
-│       ├── governance-decision.schema.json
-│       └── entity-validated.schema.json
-├── scripts/
-│   ├── generate_schemas.py           regenerates the schemas above — never hand-edit them
-│   ├── smoke_test.py                 e2e smoke test — auto + community/QV voting modes (CI `e2e` job)
-│   └── virtuoso_dialect_check.py     SPARQL dialect/idempotency check against a real Virtuoso (CI `e2e` job)
-├── services/
-│   ├── common/                       shared models, gfen: constants, PID helpers, Kafka IO (at-least-once),
-│   │                                JSON logging (`logging_config.py`), Prometheus metrics (`metrics.py`)
-│   ├── fen_bridge/                   outbound consumer + inbound webhook (2 containers)
-│   ├── validation_consumer/          SPARQL Update logic + Kafka consumer
-│   └── status_api/                   read-side web service (SPARQL → JSON + RDF/RO-Crate export) + static UI
-├── mock_fen_api/                     demo DAO stand-in — NOT production governance
-├── web/                              zero-build web interface layer
-│   ├── widget/                       Flow 2: embeddable <fen-status> Web Component + demo
-│   ├── portal/                       Flow 1: community DAO portal (candidates, voting, triadic view, delegation, SSE live updates)
-│   └── api.md                        REST contract (shared with the real FEN backend)
-├── k8s/                              Kubernetes/OKD manifests: 4 Deployments + ConfigMap + Secret
-monitoring/                        Prometheus scrape config + Grafana provisioning (fen-overview dashboard)
-├── tests/                            125 pytest tests, all offline (mocked Kafka/HTTP/LLM/SPARQL, in-memory RDF); plus 18 Node tests for web/shared (web/tests) and 5 Playwright UI e2e (web/e2e)
-└── examples/
-    ├── sample-validation-flow.trig   RDF before/after a validation cycle (TriG, parser-checked)
-    └── pid-redirects.tsv             N2T → w3id redirect configuration (ADR-003)
+```text
+services/common/        LLM client, analysis contract, provenance checks
+mock_fen_api/           API for the demo, including scaffolding
+schemas/kafka-events/   Existing event schemas (unchanged)
+schemas/analysis/       New analysis schemas (generated from the models)
+web/                    Static portal and review screen
+eval/                   Test set, runner, and report
+tests/                  pytest suite
+docs/                   ADRs, provider notes
 ```
 
-Everything under `services/`, `mock_fen_api/`, `tests/`, and `scripts/` is implemented and
-tested — see [`docs/AGENT_PLAN.md`](docs/AGENT_PLAN.md) for the phase-by-phase build log and
-`docker-compose.yml` to run it end to end.
+## Design principles
 
-## Key design decisions
+- **AI recommends, humans decide.** This follows the project's existing
+  architecture decision (ADR-004).
+- **Evidence over assertion.** A claim without a verifiable quote cannot be
+  accepted.
+- **Uncertainty is shown, not hidden.** Alternative interpretations are
+  part of the output.
+- **No canned model output in the working path.** Test fixtures are
+  labelled RECORDED or SYNTHETIC.
 
-| ADR | Decision |
-|---|---|
-| [ADR-001](docs/adr/ADR-001-rdf-anchoring-not-full-onchain.md) | Blockchain anchors only a hash of each governance decision. All content stays in GRAPHIA's Virtuoso store — no conflict with ADR-002, no GDPR right-to-erasure issue. |
-| [ADR-002](docs/adr/ADR-002-federation-node-not-embedded.md) | FEN integrates as an autonomous federation node, not as a component embedded in GoTriple KG or the DAP core. No GRAPHIA partner needs to operate or govern DAO infrastructure. |
-| [ADR-003](docs/adr/ADR-003-fen-pid-scheme.md) | Governance records get ARK + w3id.org PIDs under FEN's own NAAN (`g` decision / `v` validation record / `r` reputation snapshot / `s` scaffolding session). A PID is never bound to a blockchain explorer; the tx hash is only the `gfen:ledgerAnchor` attribute. |
-| [ADR-004](docs/adr/ADR-004-llm-judge-decision-support-only.md) | The LLM judge is decision-support only — it recommends, the community DAO decides. The LLM never votes and never writes `gfen:validationStatus`; within this repo it is used only by the demo mock. |
-| [ADR-005](docs/adr/ADR-005-participation-model-and-dao-threshold.md) | No token economy in the MVP: intrinsic + attribution incentives, near-zero friction (batch voting, delegation), portable reputation. DAO mode from ~20 active validators; below that `gfen:PeerReview`. Motivation = reputation capital + intrinsic; gamification is optional UX only, never a governance input. |
-| [ADR-006](docs/adr/ADR-006-tokenless-challenge-window.md) *(draft)* | Optional tokenless challenge window: reputation-lock based disputes (no staking — ADR-005 stays intact); default off, bounded finality delay. |
+## Limitations
 
-## The `gfen:` ontology extension
+- The check confirms that a quote exists in the source, not that the model
+  understood it correctly. Reviewers still judge meaning.
+- Contradiction detection depends on the model and is measured only on a
+  small test set.
+- Quote matching normalizes whitespace but is case- and
+  punctuation-sensitive in its exact form (a token-overlap rule is used
+  only for evaluation matching).
+- Voting and reputation mechanisms from the baseline remain simulated.
+- The hackathon decision registry is an in-memory demo store (process
+  lifetime), and decisions are published to a demo event log / injectable
+  publisher — wiring them into the Kafka governance pipeline is not
+  claimed.
+- Live-response artifacts are kept local until a human reviews them for
+  commit.
 
-A single additive namespace on top of the existing TRIPLE Ontology provenance model (`oa:Annotation`, named graphs) — no core class is modified:
+## Data and licensing
 
-```turtle
-@prefix gfen: <https://w3id.org/got/fen/ontology#> .
-
-gfen:validationStatus      a rdf:Property .  # -> pending | validated | disputed | rejected
-gfen:validationMethod      a rdf:Property .  # -> QuadraticVoting | PeerReview
-gfen:governanceDecisionId  a rdf:Property .  # -> dereferenceable PID (ark:{FEN_NAAN}/g#####)
-gfen:reputationSnapshot    a rdf:Property .  # -> dereferenceable PID (ark:{FEN_NAAN}/r#####)
-gfen:ledgerAnchor          a rdf:Property .  # anchor hash only; simulated (0xMOCK) in the MVP — ADR-001
-gfen:contributorProfile    a rdf:Property .  # -> triple:Profile (reused, not duplicated)
-```
-
-The namespace declares `owl:imports` to the GRAPHIA/TRIPLE Ontology — currently
-a **stub IRI** (`https://w3id.org/gotriple/ontology`), to be replaced with the
-official GRAPHIA Ontology IRI once confirmed with the consortium (whitepaper §8).
-The import is declarative only: nothing in the imported ontology is modified
-(ADR-002).
-
-Full definitions: [`docs/ontology/fen-ontology.ttl`](docs/ontology/fen-ontology.ttl).
-
-## PID scheme (ADR-003)
-
-Governance artefacts get stable, dereferenceable identifiers following the same
-ARK + w3id.org pattern as GoTriple KG (D2.2, §4.5), under FEN's own NAAN:
-
-```
-ark:{FEN_NAAN}/g00042   ->  https://w3id.org/fen/id/decision/g00042          (governance decision)
-ark:{FEN_NAAN}/v00042   ->  https://w3id.org/fen/id/validation/v00042        (validation record)
-ark:{FEN_NAAN}/r00042   ->  https://w3id.org/fen/id/reputation-snapshot/r00042  (reputation snapshot)
-ark:{FEN_NAAN}/s00042   ->  https://w3id.org/fen/id/session/s00042           (scaffolding session)
-```
-
-Resolution: `https://n2t.net/ark:{NAAN}/...` redirects to the w3id URI
-(content negotiation: HTML for humans, RDF/JSON-LD for machines). Only
-aggregated decision records are published — no individual votes (GDPR).
-Implementation: [`services/common/pid.py`](services/common/pid.py).
-
-## Pluggable LLM judge — decision-support only ([ADR-004](docs/adr/ADR-004-llm-judge-decision-support-only.md))
-
-The demo mock can use **any OpenAI-compatible chat API** as an
-*AI-assisted reviewer* — OpenAI, DeepSeek, a local vLLM/Ollama instance, or
-GRAPHIA's own services (LLM4SSH, Quagga) if they expose such an endpoint.
-Configured purely via env:
-
-```
-FEN_LLM_BASE_URL=https://api.deepseek.com/v1   # any OpenAI-compatible base URL
-FEN_LLM_API_KEY=...
-FEN_LLM_MODEL=deepseek-chat
-```
-
-**The boundary (ADR-004): the LLM recommends, the community decides.** The
-judge may *suggest* an outcome (validated/disputed/rejected) to the DAO — it
-never votes, never renders a verdict and never writes `gfen:validationStatus`.
-The final decision always comes from the community DAO (Quadratic Voting),
-which in production lives outside this repository (ADR-002). Within this repo
-`services/common/llm.py` is called **only** by the demo mock
-(`mock_fen_api/main.py`) to simulate a reviewer whose recommendation the
-simulated DAO quorum adopts; neither the FEN Bridge nor the Validation Result
-Consumer imports it. The judge is deliberately **generic**: it reviews the
-whole candidate payload, so the same validation layer works for *any dataset
-type*, not just linguistic entities. If the LLM is unavailable or indecisive,
-the mock falls back to a deterministic rule — the pipeline never blocks.
-Implementation: [`services/common/llm.py`](services/common/llm.py).
-
-## Observability
-
-All services log JSON-structured lines to stdout (`LOG_LEVEL` env var, see
-[`.env.example`](.env.example)). Every service in the stack is scrapable by
-Prometheus:
-
-- HTTP services (`fen-bridge-webhook`, `mock-fen-api`, `status-api`) expose
-  `GET /metrics` and a dependency-aware `GET /readyz` next to their existing
-  `/healthz`;
-- the consumer processes (`fen-bridge-outbound`, `validation-consumer`)
-  serve the same Prometheus format on a dedicated `METRICS_PORT` (9101 /
-  9102) via `prometheus_client.start_http_server` — see
-  `services/common/metrics.py`.
-
-All processes share the `fen_*` Kafka counters (processed/failed), shut down
-gracefully on SIGTERM/SIGINT (producer flush, consumer close, delivery-pool
-drain), and their `/metrics` endpoints are scraped by the bundled Prometheus
-(`monitoring/prometheus/prometheus.yml`, five jobs). Ship the JSON logs to
-Loki in production — full details in the [architecture doc](docs/architecture.md#observability).
-
-## Positioning vs GRAPHIA's own AI services
-
-GRAPHIA already ships LLM services — LLM4SSH (open-weight LLM on HPC/OKD),
-Quagga (KGQA with RAG), TALLMesh (thematic analysis), IMeTo (fine-tuned
-indexing), and the EHRI Pilot (LLM-assisted subject indexing **with
-human-in-the-loop**). FEN does **not** duplicate them:
-
-- **Scaffolding** — FEN's Agentic Scaffolding can *reuse* LLM4SSH/Quagga as
-  the LLM backend instead of running its own model fleet.
-- **Validation** — GRAPHIA's human-in-the-loop is *single-expert review*;
-  FEN is *collective decision-making* (DAO, Quadratic Voting, reputation,
-  sybil resistance). Different governance models, different niche.
-- **Niche** — FEN targets community-owned, culturally sensitive data
-  (low-resource languages, minority dialects, community datasets) where
-  expert-only review does not scale.
-
-## Applicability & limits
-
-The validation layer targets the long tail — community-validated content
-that expert-only curation cannot cover at scale. Where it fits
-(federated SSH infrastructures, Wikidata-adjacent projects, indigenous
-heritage archives under CARE principles, any crowdsourced annotation
-pipeline) and where it deliberately does not (curated high-resource
-domains, real-time decisions, communities below the DAO threshold) is
-spelled out in [`docs/applicability-and-limits.md`](docs/applicability-and-limits.md),
-together with the participation-economics model ([ADR-005](docs/adr/ADR-005-participation-model-and-dao-threshold.md)).
-
-## Integration contract (to be verified with the consortium)
-
-The step-by-step verification plan — what to check, in what order, with
-entry/exit criteria — is in
-[`docs/integration-verification-plan.md`](docs/integration-verification-plan.md).
-
-The following assumptions come from D2.2/whitepaper and **must be confirmed
-against a live GRAPHIA test instance** before production integration (see
-whitepaper §8 "Request to the Consortium"):
-
-| Contract | Current assumption | Verification needed |
-|---|---|---|
-| Kafka topics | `dap.entities.pending_validation.v1`, `fen.governance.decisions.v1`, `dap.entities.validated.v1`; env aliases `FEN_TOPIC_CANDIDATES` / `FEN_TOPIC_VALIDATED` ready | real DAP topic names + event bus availability |
-| WP4 message schema | `EntityCandidate` (`schemas/kafka-events/`) | align with actual extracted-entity schema (no transformation) |
-| Named graphs | `urn:graphia:document:{id}:graph` | DAP's real named-graph URI scheme (D2.2 §3.5) |
-| SPARQL endpoint | `SPARQL_UPDATE_ENDPOINT` (Fuseki locally) | Virtuoso dialect compatibility of `build_update_query` — verified locally against OpenLink Virtuoso (`virtuoso_dialect_check.py`); production store pending. Note: the public GoTriple KG release (1 Sept 2026) is **read-only and QLever-based** — validation writes need the DAP-side store / a consortium test instance (ADR-002) |
-| PID NAAN | `FEN_NAAN=99999` (dev) | registered NAAN + N2T/w3id redirects (ADR-003) |
-| Deployment | docker-compose (dev) | OKD (OpenShift)/Kubernetes manifests for the DAP stack |
-
-## Web interface (Flow 1 & Flow 2)
-
-A zero-build web layer (plain HTML/JS + FastAPI — no Node toolchain) exposes
-the two community flows:
-
-- **Flow 1 — Community DAO portal** (`web/portal/`): submit candidates,
-  watch `gfen:pending` cards, cast community votes (demo mode
-  `FEN_MOCK_VOTING=community`), track quorum progress. Talks to the mock FEN
-  API (`GET /candidates`, `POST /candidates/{id}/vote`). Two views:
-  - the classic candidates/voting table (`index.html`);
-  - the **Triadic view** (`triadic.html`): Scaffold → Consensus → Registry,
-    with QV intensity voting (cost = intensity², threshold per ADR-005),
-    delegation (liquid democracy, `POST /candidates/{id}/delegate`),
-    reputation history + LLM-judge accuracy panel, live updates over SSE
-    (`/events`), and Registry export links (TTL/JSON-LD/N-Triples/RO-Crate).
-    Generic framework framing — works for any dataset type, not only
-    linguistic data.
-- **Flow 2 — Validation-status widget** (`web/widget/`): an embeddable
-  `<fen-status>` Web Component that renders the validation badge for any
-  annotation, resolved live from the RDF store via the **Status API**
-  (`services/status_api`, `GET /api/v1/status/{id}` — SPARQL SELECT, read-only
-  per ADR-001; `GET /api/v1/export/{id}?format=ttl|jsonld|nt|crate` for RDF /
-  RO-Crate export). Click a badge for decision details (method,
-  dereferenceable PID per ADR-003, ledger anchor).
-
-The full HTTP contract is [`web/api.md`](web/api.md) — the same contract the
-real FEN backend (external, ADR-002) is expected to implement, which keeps the
-UI backend-agnostic. CORS is enabled (`FEN_CORS_ORIGINS`) so the widget can be
-embedded in third-party pages.
-
-Run the demo:
-
-```bash
-docker compose up --build
-# portal:  http://localhost:8082/web/portal/          (classic view)
-# triadic: http://localhost:8082/web/portal/triadic.html  (Scaffold→Consensus→Registry)
-#          mock in QV mode: FEN_MOCK_VOTING=qv FEN_MOCK_QV_THRESHOLD=10
-# widget:  http://localhost:8082/web/widget/demo.html
-```
-
-## Status
-
-🟢 **CI: green on the self-hosted runner** (125 pytest + 18 Node tests + 5 Playwright UI e2e, plus a REAL end-to-end run in CI — the e2e job executes the full Docker stack incl. the Virtuoso dialect check and passes; runs are recorded in [docs/self-hosted-runner.md](docs/self-hosted-runner.md)).
-
-- 🟡 **Python matrix temporarily 3.10 in CI** (self-hosted runner; the code supports 3.11/3.12 - the full matrix returns with hosted runners, see [docs/self-hosted-runner.md](docs/self-hosted-runner.md)).
-
-
-🟢 **MVP implemented, unit-tested, runnable via `docker compose up`.** All Kafka
-message contracts, the `gfen:` ontology extension, the FEN Bridge (outbound +
-webhook), the Validation Result Consumer's SPARQL Update logic, and a mock DAO for
-local demos are in place (three demo voting modes: auto / community / quadratic-voting demo) — tests pass offline (mocked Kafka/HTTP/LLM/SPARQL, in-memory RDF
-via `rdflib`). Kafka delivery is **at-least-once** (`acks=all`, idempotent
-producer, commit-after-processing — see [`docs/architecture.md`](docs/architecture.md)),
-and an end-to-end smoke test (`scripts/smoke_test.py`) validates the full loop
-against the docker-compose stack (CI `e2e` job).
-
-**Not yet done:**
-- Real DAO / production Quadratic Voting integration
-- Production identity / Sybil-resistance mechanisms
-- Real blockchain / ledger anchoring (currently represented by `"0xMOCK..."` stub)
-- GRAPHIA production integration (real Kafka topics, real Virtuoso)
-- Registering a real NAAN for FEN PIDs
-
-See the "Request to the Consortium" section of the [whitepaper](docs/FEN-Whitepaper-Triadic-Synthesis.pdf) for what's needed to start that.
-
-## Implementation status (evidence markers)
-
-Every capability claim below is marked with what it actually is, so a reader
-never has to guess whether something was run, coded, simulated, or is still
-awaiting the consortium:
-
-- ✅ **VERIFIED** — executed for real in this repo: unit tests, the CI e2e
-  pipeline (Docker stack + Kafka + Fuseki/Virtuoso), or a live check.
-- 🟦 **IMPLEMENTED** — the code exists and is covered by tests, but the
-  external counterpart (real GRAPHIA/KG service) is not involved yet.
-- 🟧 **MOCK** — deliberately simulated inside this repository (demo DAO,
-  LLM recommendations, ledger anchors); the production component is external
-  by design (ADR-002).
-- ⬜ **PENDING CONSORTIUM** — needs GRAPHIA/consortium input: live Kafka
-  topics, the official ontology IRI, a registered NAAN, real identity.
-
-| Capability | Marker | Evidence |
-|---|---|---|
-| Event pipeline (Kafka at-least-once, FEN Bridge, Validation Result Consumer) | ✅ VERIFIED | 125 pytest + CI e2e (smoke auto/community/QV, real Docker stack) |
-| SPARQL UPDATE dialect vs Virtuoso | ✅ VERIFIED | `scripts/virtuoso_dialect_check.py` green in CI (OpenLink Virtuoso) |
-| SHACL structural gate at Scaffold | ✅ VERIFIED | `scripts/shacl_check.py` in CI; shapes shipped into the mock image |
-| gfen: ontology extension (additive, no GRAPHIA modification) | ✅ VERIFIED | ontology parse tests; `owl:imports` stub documented |
-| Status API + RDF/RO-Crate export | ✅ VERIFIED | unit tests + UI e2e hits `/api/v1/status`, `/export` |
-| Web layer (portal classic/triadic, widget) | ✅ VERIFIED | 18 Node tests + 5 Playwright UI e2e in CI |
-| Agentic Scaffolding (extractor/matcher/disambiguator, LLM pluggable) | 🟦 IMPLEMENTED (demo) | `mock_fen_api/scaffold.py`; production scaffolding is external (ADR-002) |
-| Governance — QV, delegation, reputation | 🟧 MOCK | `mock_fen_api/{qv_voting,delegation}.py`; real DAO external (ADR-002) |
-| Identity / sybil resistance | 🟧 MOCK | free-text voter names; production identity external (ADR-005) |
-| Ledger anchoring | 🟧 MOCK | `0xMOCK` anchors until real ledger (ADR-001) |
-| PID scheme (ARK/w3id, g/v/r/s) | 🟦 IMPLEMENTED | `services/common/pid.py`; dev NAAN `99999` |
-| NAAN registration + N2T/w3id redirects | ⬜ PENDING CONSORTIUM | drafts ready; ADR-003 |
-| Official GRAPHIA Ontology IRI (`owl:imports`) | ⬜ PENDING CONSORTIUM | stub IRI today |
-| Live GRAPHIA: Kafka topics, WP4 schema, Virtuoso, named graphs | ⬜ PENDING CONSORTIUM | `docs/GRAPHIA-INTEGRATION.md`, integration-verification-plan |
-| Empirical precision/recall (before/after validation) | ⬜ PENDING CONSORTIUM | next research phase (whitepaper "Next steps") |
-
-## Roadmap
-
-- [x] FEN Bridge, Validation Result Consumer, and mock DAO implemented and unit-tested (this repo)
-- [x] PID scheme for governance records (ADR-003): `services/common/pid.py`, redirect config artefact
-- [x] Participation model & DAO threshold (ADR-005) + applicability analysis (`docs/applicability-and-limits.md`)
-- [x] SPARQL dialect + idempotency check against a real Virtuoso (OpenLink, the engine named in the D2.2 architecture) — `scripts/virtuoso_dialect_check.py`, wired into CI
-- [ ] FEN Bridge validated against a real GRAPHIA test Kafka topic + a single low-resource-language WP4 test corpus
-- [ ] End-to-end demo against GRAPHIA's live Virtuoso test instance (local Virtuoso dialect check done; production store still pending)
-- [ ] Real NAAN registered with the consortium; N2T/w3id redirects published
-- [ ] Precision/recall evaluation, before vs. after community validation
-- [ ] Formal registration as an external node in the SSH KG federation
-- [ ] Accessibility work: mobile-first interface, blockchain complexity abstracted away from contributors
-
-## Related work
-
-- **Companion paper:** *Decentralised Agentic Governance: A Methodology for Community-Owned Linguistic Datasets and Knowledge Synthesis* (Riznyk, 2026) — **published** in the CERN IdeaSquare Journal of Experimental Innovation, DOI [10.23726/cij.2026.1829](https://doi.org/10.23726/cij.2026.1829)
-- **Integrates with:** [GRAPHIA](https://graphia-ssh.eu/) — D2.2 Technical Architecture (SSH Knowledge Graph, Data Acquisition Platform)
-- **Research source:** [`docs/research/graphia-tech-stack-2026-08.pdf`](docs/research/graphia-tech-stack-2026-08.pdf) — GRAPHIA technology-stack research (English edition; RDF/LPG, Ontology, DAP, OKD/HPC, LLM services), the basis for the integration audit
-
-## Citing this repository
-
-```bibtex
-@software{riznyk2026fen,
-  author  = {Riznyk, Vadym},
-  title   = {{FEN} --- Triadic Synthesis Framework: A Federated Epistemic
-             Node for Community-Governed Knowledge Validation},
-  year    = {2026},
-  url     = {https://github.com/riznykst/fen-triadic-synthesis},
-  version = {0.2.2},
-  note    = {Research prototype; companion implementation of
-             "Decentralised Agentic Governance" (CERN IdeaSquare J. Exp.
-             Innovation, published 2026, DOI 10.23726/cij.2026.1829)}
-}
-```
-
-Machine-readable metadata: [`CITATION.cff`](CITATION.cff).
+Source texts used in the demo and evaluation will be listed with their
+origin and license in `eval/dataset/SOURCES.md` before publication (that
+file does not exist yet — no real corpus data is in the repository today;
+the dataset gate is [eval/validate_dataset.py](eval/validate_dataset.py)).
+Check each source's license before reuse.
 
 ## License
 
-Apache 2.0 — see [`LICENSE`](LICENSE). Chosen for compatibility with GRAPHIA's own open-source and POSI-aligned governance requirements (D2.2, §5.2.2).
+See [LICENSE](LICENSE).
 
-## Contact
+## Acknowledgements
 
-Vadym Riznyk — Independent Researcher — [riznykv@gmx.de](mailto:riznykv@gmx.de)
-
-Contributions follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+Built for the Meta Global AI Developer Hackathon. The baseline FEN Triadic
+Synthesis prototype is by its original author; see the repository history
+for details.
