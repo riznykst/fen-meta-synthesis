@@ -48,13 +48,16 @@ Each line names the task commit that introduced it.
   (`model_returned=muse-spark-1.3`, usage recorded); sanitized evidence in
   `artifacts/meta/first_live_response.json` (artifacts are not committed
   without human review — SPEC section 0.6).
-- (pending T2/T3) Provenance-aware `POST /analyze`: an earlier working
-  implementation (`mock_fen_api/analysis.py`, 27 offline tests, live 200
-  response with 4 claims and a detected date contradiction on
-  `muse-spark-1.3`) was built in the 2026-10-28 session under the preceding
-  task specification; T2/T3 re-home it to the SPEC contracts
-  (`services/common/analysis.py`, `services/common/analyze.py`, section 6
-  shapes) without changing its verified behaviour.
+- T2 — Analysis service: canonical contract in `services/common/analysis.py`
+  (claims with exact `quote` + separate `interpretation`, contradictions,
+  JSON Schema in `schemas/analysis/document-analysis.schema.json`) and
+  `services/common/analyze.py` (`analyze_documents` -> section 6 result with
+  `analysis_id`, `prompt_hash`, requested/returned model, `latency_ms`,
+  `provenance_check`; exactly one format-retry, raw failures preserved
+  under `artifacts/`). An earlier working implementation
+  (`mock_fen_api/analysis.py`, live 200 with 4 claims on `muse-spark-1.3`,
+  2026-10-28) informed this contract; its legacy field aliases remain
+  parseable. T3 re-points the endpoint at this service.
 
 ## Simulated / planned (never presented as production)
 

@@ -1,0 +1,178 @@
+{
+  "$defs": {
+    "ClaimDraft": {
+      "additionalProperties": false,
+      "description": "One extracted claim as returned by the model (pre-provenance-check).",
+      "properties": {
+        "claim_id": {
+          "minLength": 1,
+          "title": "Claim Id",
+          "type": "string"
+        },
+        "quote": {
+          "description": "Exact span copied verbatim from the referenced document",
+          "minLength": 1,
+          "title": "Quote",
+          "type": "string"
+        },
+        "statement": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The claim as asserted, distinct from interpretation",
+          "title": "Statement"
+        },
+        "interpretation": {
+          "minLength": 1,
+          "title": "Interpretation",
+          "type": "string"
+        },
+        "document_id": {
+          "minLength": 1,
+          "title": "Document Id",
+          "type": "string"
+        },
+        "ambiguities": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Ambiguities",
+          "type": "array"
+        },
+        "uncertainty": {
+          "$ref": "#/$defs/Uncertainty"
+        },
+        "review_recommendation": {
+          "$ref": "#/$defs/ReviewRecommendation"
+        },
+        "contradiction_with": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Contradiction With",
+          "type": "array"
+        }
+      },
+      "required": [
+        "claim_id",
+        "quote",
+        "interpretation",
+        "document_id",
+        "uncertainty",
+        "review_recommendation"
+      ],
+      "title": "ClaimDraft",
+      "type": "object"
+    },
+    "ContradictionDraft": {
+      "additionalProperties": false,
+      "properties": {
+        "contradiction_id": {
+          "minLength": 1,
+          "title": "Contradiction Id",
+          "type": "string"
+        },
+        "claim_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 2,
+          "title": "Claim Ids",
+          "type": "array"
+        },
+        "kind": {
+          "$ref": "#/$defs/ContradictionKind",
+          "default": "other"
+        },
+        "explanation": {
+          "default": "",
+          "title": "Explanation",
+          "type": "string"
+        },
+        "alternative_interpretations": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Alternative Interpretations",
+          "type": "array"
+        }
+      },
+      "required": [
+        "contradiction_id",
+        "claim_ids"
+      ],
+      "title": "ContradictionDraft",
+      "type": "object"
+    },
+    "ContradictionKind": {
+      "enum": [
+        "direct_negation",
+        "temporal_mismatch",
+        "value_mismatch",
+        "other"
+      ],
+      "title": "ContradictionKind",
+      "type": "string"
+    },
+    "ReviewRecommendation": {
+      "enum": [
+        "proceed_to_human_review",
+        "needs_expert_review",
+        "more_evidence_required"
+      ],
+      "title": "ReviewRecommendation",
+      "type": "string"
+    },
+    "Uncertainty": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "insufficient_evidence"
+      ],
+      "title": "Uncertainty",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "claims": {
+      "items": {
+        "$ref": "#/$defs/ClaimDraft"
+      },
+      "minItems": 1,
+      "title": "Claims",
+      "type": "array"
+    },
+    "contradictions": {
+      "items": {
+        "$ref": "#/$defs/ContradictionDraft"
+      },
+      "title": "Contradictions",
+      "type": "array"
+    },
+    "summary": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Summary"
+    }
+  },
+  "required": [
+    "claims"
+  ],
+  "title": "AnalysisDraft",
+  "type": "object"
+}
