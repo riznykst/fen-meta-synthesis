@@ -118,3 +118,78 @@ def current_status(decisions: list, analysis_id: str, item_id: str) -> str:
         if record.get("analysis_id") == analysis_id and record.get("item_id") == item_id:
             status = record["status"]
     return status
+
+
+def build_provenance(analyses: dict, decisions: list, item_id: str,
+                     analysis_id: Optional[str] = None) -> Optional[dict]:
+    """Full provenance chain for one item (T5), or None when unknown.
+
+    document -> quote -> model proposal (model, prompt_hash, time) ->
+    human decisions (reviewer, verdict, comment, time). Searches claims
+    and contradictions across stored analyses; ``analysis_id`` disambiguates
+    when the same item id appears in several analyses."""
+    candidates = []
+    for stored_id, analysis in analyses.items():
+        if analysis_id and stored_id != analysis_id:
+            continue
+        for item_type in ("claim", "contradiction"):
+            item = find_item(analysis, item_type, item_id)
+            if item is not None:
+                candidates.append((stored_id, analysis, item_type, item))
+    if not candidates:
+        return None
+    stored_id, analysis, item_type, item = candidates[0]
+    documents_by_id = {d["document_id"]: d for d in analysis.get("_documents", [])}
+    item_decisions = [
+        {
+            "decision_id": r["decision_id"],
+            "reviewer": r["reviewer"],
+            "verdict": r["verdict"],
+            "status": r["status"],
+            "comment": r.get("comment", ""),
+            "recorded_at": r["recorded_at"],
+        }
+        for r in decisions
+        if r.get("analysis_id") == stored_id and r.get("item_id") == item_id
+    ]
+    proposal = {
+        "analysis_id": stored_id,
+        "status": "proposed",
+        "model": analysis.get("model"),
+        "prompt_hash": analysis.get("prompt_hash"),
+        "created_at": analysis.get("created_at"),
+        "item": item,
+    }
+    if item_type == "claim":
+        document = documents_by_id.get(item.get("document_id"))
+        quotes = [{"document_id": item.get("document_id"), "quote": item.get("quote")}]
+    else:
+        claims_by_id = {
+            c["claim_id"]: c for c in analysis.get("analysis", {}).get("claims", [])
+        }
+        document = None
+        quotes = [
+            {
+                "document_id": claims_by_id[ref].get("document_id"),
+                "quote": claims_by_id[ref].get("quote"),
+            }
+            for ref in item.get("claim_ids", [])
+            if ref in claims_by_id
+        ]
+    return {
+        "item_id": item_id,
+        "item_type": item_type,
+        "analysis_id": stored_id,
+        "status": current_status(decisions, stored_id, item_id),
+        "document": document,
+        "documents": [
+            documents_by_id[doc_id]
+            for doc_id in dict.fromkeys(
+                q["document_id"] for q in quotes if q["document_id"] in documents_by_id
+            )
+        ],
+        "quotes": quotes,
+        "model_proposal": proposal,
+        "decisions": item_decisions,
+        "chain_complete": bool(document or quotes) and bool(item_decisions),
+    }

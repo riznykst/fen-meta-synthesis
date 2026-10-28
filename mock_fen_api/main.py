@@ -84,6 +84,7 @@ from services.common.analyze import AnalysisUnavailable, analyze_documents
 from mock_fen_api.decisions import (
     ReviewDecisionBody,
     build_event,
+    build_provenance,
     find_item,
     item_is_verified,
 )
@@ -687,6 +688,19 @@ def create_decision(payload: ReviewDecisionBody):
         "recorded_at": record["recorded_at"],
         "event_published": event_published,
     }
+
+
+@app.get("/provenance/{item_id}")
+def get_provenance(item_id: str, analysis_id: Optional[str] = None):
+    """Full provenance chain for one proposed/decided item (T5):
+    document -> quote -> model proposal (model, prompt_hash, created_at)
+    -> every human decision (reviewer, verdict, comment, recorded_at).
+    ``?analysis_id=`` disambiguates reused item ids. 404 when unknown."""
+    with _state_lock:
+        chain = build_provenance(_analyses, list(_decisions), item_id, analysis_id)
+    if chain is None:
+        raise HTTPException(status_code=404, detail="unknown item_id")
+    return chain
 
 
 @app.get("/events")

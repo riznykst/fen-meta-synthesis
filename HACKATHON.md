@@ -78,6 +78,9 @@ Each line names the task commit that introduced it.
   governance schema is unchanged). Accept on an unverified quote -> 409;
   decisions are immutable/append-only. Registry and default event log are
   in-memory demo scope (process lifetime), as recorded in OPEN_QUESTIONS Q7.
+- T5 — Provenance: `GET /provenance/{item_id}` returns the full chain
+  (document, quotes, model proposal with `prompt_hash` and time, all human
+  decisions in order); unknown id -> 404.
 - Quality measurements (T7) and the second-provider comparison (Baseten,
   `muse-spark-open-1026`) are **planned** until a real dataset (T8, supplied
   by the human) and provider access exist.

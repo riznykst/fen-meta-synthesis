@@ -109,7 +109,16 @@ Publishes a `review-decision` event
   whose quote is not verified (reject/dispute still allowed). `422` —
   invalid verdict/body. Demo registry is in-memory (see HACKATHON.md).
 
-## 3e. Voting modes — `POST /candidates/{annotation_id}/vote`
+## 3e. Provenance chain — `GET /provenance/{item_id}` (T5)
+
+→ `200 {item_id, item_type, analysis_id, status, document, documents,
+quotes: [{document_id, quote}], model_proposal: {model, prompt_hash,
+created_at, item}, decisions: [{decision_id, reviewer, verdict, status,
+comment, recorded_at}], chain_complete}` — the full chain
+document → quote → model proposal → human decisions. `?analysis_id=`
+disambiguates reused item ids. `404` — unknown item.
+
+## 3f. Voting modes — `POST /candidates/{annotation_id}/vote`
 
 | Mode (`FEN_MOCK_VOTING`) | Semantics |
 |---|---|
