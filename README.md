@@ -1,3 +1,10 @@
+> **Hackathon branch — FEN × Meta: Human-Governed AI Synthesis** (Meta Global AI Developer Hackathon, submission deadline 4 Nov 2026).
+> On this branch, a Meta model (`muse-spark-1.3`) extracts claims and contradictions from source documents, the system automatically verifies every quote, and a human accepts, rejects or disputes each proposal — the decision is recorded with its full provenance. **The model proposes; it never decides.**
+> **Start here:** [DEMO.md](DEMO.md) (3-minute scenario) · [HACKATHON.md](HACKATHON.md) (what is hackathon work vs. pre-existing) · [eval/REPORT.md](eval/REPORT.md) (measurements) · [docs/OPEN_QUESTIONS.md](docs/OPEN_QUESTIONS.md)
+> Pre-hackathon baseline: tag `baseline-pre-hackathon`. The project description below is the underlying research prototype this branch builds on.
+
+---
+
 # FEN — Triadic Synthesis Framework
 
 **A research prototype and reference architecture for a federated epistemic validation layer for community-governed linguistic knowledge** — designed to integrate with the [GRAPHIA](https://graphia-ssh.eu/) SSH Knowledge Graph as an autonomous federation node.
