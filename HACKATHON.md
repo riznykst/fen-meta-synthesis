@@ -97,7 +97,9 @@ Each line names the task commit that introduced it.
   human-supplied dataset (T8); the B1 Baseten comparison awaits access
   (OPEN_QUESTIONS Q4).
 - Real Sumerian corpus and gold standards: supplied by the human only (T8);
-  the agent never generates them.
+  the agent never generates them. Agent-made T8 artefacts are only
+  `eval/dataset/TEMPLATE.json` and `eval/validate_dataset.py` (the gate
+  also refuses examples without a human-checked source licence).
 
 ## Rule that never moves
 

@@ -1,0 +1,40 @@
+{
+  "_kind": "TEMPLATE — the human fills this in with real records (T8). Do NOT invent Sumerian data. One file per lemma or one example per JSON object in a list.",
+  "_instructions": {
+    "source": "Name the corpus (e.g. ePSD2 or ORACC), the record identifiers, and the licence AFTER checking it. Examples without a checked licence must not be published in this repository.",
+    "documents": "2-3 real records per lemma. document_id must be stable and unique inside the example (use the corpus record id where possible).",
+    "gold_claims": "Human-written standard: quote must be copied exactly from one of the documents above (the validator checks locatability).",
+    "gold_contradictions": "Pairs of gold quotes that contradict, with a kind (e.g. temporal_mismatch, value_mismatch, direct_negation, other).",
+    "count": "Target for T8: 15-20 examples across 3-5 lemmas."
+  },
+  "example_id": "lemma-<slug>-01",
+  "source": {
+    "corpus": "<ePSD2 | ORACC | ...>",
+    "records": ["<record id 1>", "<record id 2>"],
+    "license": "<licence name + URL — CHECKED BY HUMAN BEFORE PUBLICATION>"
+  },
+  "documents": [
+    {
+      "document_id": "<record-id-1>",
+      "title": "<lemma / record title>",
+      "text": "<exact record text as published by the corpus>"
+    },
+    {
+      "document_id": "<record-id-2>",
+      "title": "<lemma / record title>",
+      "text": "<exact record text as published by the corpus>"
+    }
+  ],
+  "gold_claims": [
+    { "quote": "<exact quote copied from one document above>" }
+  ],
+  "gold_contradictions": [
+    {
+      "claim_quotes": [
+        "<exact quote 1>",
+        "<exact quote 2>"
+      ],
+      "kind": "<temporal_mismatch | value_mismatch | direct_negation | other>"
+    }
+  ]
+}
