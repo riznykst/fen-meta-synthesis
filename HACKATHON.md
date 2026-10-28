@@ -39,12 +39,15 @@ hackathon (tasks T2/T3). See `docs/OPEN_QUESTIONS.md` Q1.
 
 Each line names the task commit that introduced it.
 
-- (pending T1) Meta Model API client extension + live smoke:
-  on 2026-10-28 a real call through the pre-existing
-  `services/common/llm.py` client to `https://api.meta.ai/v1`
-  (`muse-spark-1.3`, chat completions, `system` role) returned `FEN_META_OK`.
-  Sanitized evidence was written to `artifacts/meta/first_live_response.json`
-  (artifacts are not committed without human review — SPEC section 0.6).
+- T1 — Meta Model API client: `services/common/llm.py` extended without
+  breaking its API (`chat_completion_detailed` returns text +
+  `model_returned`/`usage`/`finish_reason`; one retry on network errors
+  only; configurable `system` role; opt-in JSON mode), `docs/PROVIDERS.md`,
+  `scripts/live_smoke.py`. Live verification 2026-10-28: real calls to
+  `https://api.meta.ai/v1` (`muse-spark-1.3`) returned `FEN_META_OK`
+  (`model_returned=muse-spark-1.3`, usage recorded); sanitized evidence in
+  `artifacts/meta/first_live_response.json` (artifacts are not committed
+  without human review — SPEC section 0.6).
 - (pending T2/T3) Provenance-aware `POST /analyze`: an earlier working
   implementation (`mock_fen_api/analysis.py`, 27 offline tests, live 200
   response with 4 claims and a detected date contradiction on
