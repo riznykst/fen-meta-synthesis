@@ -76,6 +76,11 @@ from mock_fen_api.qv_voting import (
     qv_decide,
     qv_scores,
 )
+from pydantic import BaseModel, Field
+
+from services.common.analysis import AnalysisParseError, SourceDocument
+from services.common.analyze import AnalysisUnavailable, analyze_documents
+
 from mock_fen_api.scaffold import run_scaffold
 
 setup_logging("mock-fen-api", level=log_level_from_env())
@@ -118,6 +123,18 @@ _reputation_counter = itertools.count(1)
 
 # In-flight candidate state (UI demo): annotation_id -> record.
 _candidates: Dict[str, dict] = {}
+# Completed analyses (T3): analysis_id -> section-6 result. In-memory
+# demo registry — T4 decisions and T5 provenance read from here; lifetime
+# is the process lifetime (labelled simulated/demo in HACKATHON.md).
+_analyses: Dict[str, dict] = {}
+MAX_ANALYZE_CHARS = 30_000  # total document text limit for POST /analyze (T3)
+
+
+class AnalyzeBody(BaseModel):
+    """POST /analyze request body (SPEC section 6)."""
+
+    documents: list[SourceDocument] = Field(min_length=1)
+    focus: Optional[str] = None
 _reputation_history: list = []
 # Voter/contributor reputation (demo QV mode): name -> points.
 _reputation: Dict[str, int] = {}
@@ -568,6 +585,47 @@ def scaffold(payload: dict):
     with _state_lock:
         registry = [dict(r) for r in _candidates.values()]
     return run_scaffold(text, _llm_config, registry)
+
+
+@app.post("/analyze")
+def analyze(payload: AnalyzeBody):
+    """Provenance-aware claim analysis (T3, SPEC section 6) — the model
+    proposes, a human decides (ADR-004). The result is stored in the
+    in-memory ``_analyses`` registry so T4 decisions and T5 provenance can
+    reference its items; its status is always ``proposed``.
+
+    Errors: 422 — invalid input (no/duplicate documents, or more than
+    30 000 characters of document text in total); 502 — the model provider
+    failed or its response failed the structured contract (after the single
+    format-retry inside the service). There is NO fallback to a prepared
+    answer. Logic: services/common/analyze.py over
+    services/common/analysis.py."""
+    document_ids = [d.document_id for d in payload.documents]
+    if len(set(document_ids)) != len(document_ids):
+        raise HTTPException(status_code=422, detail="duplicate document_id in documents")
+    total_chars = sum(len(d.text) for d in payload.documents)
+    if total_chars > MAX_ANALYZE_CHARS:
+        raise HTTPException(
+            status_code=422,
+            detail=f"documents exceed {MAX_ANALYZE_CHARS} characters in total ({total_chars})",
+        )
+    try:
+        result = analyze_documents(payload.documents, _llm_config, focus=payload.focus)
+    except AnalysisUnavailable as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    except AnalysisParseError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail={"code": "invalid_analysis", "errors": exc.errors},
+        ) from exc
+    with _state_lock:
+        # The stored copy also keeps the source documents so T5 provenance
+        # can show document -> quote; the response body stays section-6.
+        _analyses[result["analysis_id"]] = {
+            **result,
+            "_documents": [d.model_dump(mode="json") for d in payload.documents],
+        }
+    return result
 
 
 @app.get("/events")

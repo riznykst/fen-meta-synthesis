@@ -57,7 +57,14 @@ Each line names the task commit that introduced it.
   under `artifacts/`). An earlier working implementation
   (`mock_fen_api/analysis.py`, live 200 with 4 claims on `muse-spark-1.3`,
   2026-10-28) informed this contract; its legacy field aliases remain
-  parseable. T3 re-points the endpoint at this service.
+  parseable.
+- T3 — `POST /analyze` endpoint in `mock_fen_api/main.py` on the canonical
+  service: section 6 request/response, 422 on invalid input (including the
+  30 000-character total limit, checked before any provider call), 502 on
+  provider/contract failure, no prepared-answer fallback; results stored
+  in the in-memory `_analyses` registry for T4/T5. Live-verified
+  2026-10-28 on `muse-spark-1.3` (4 claims, all quotes verified, one
+  `temporal_mismatch` contradiction with alternative interpretations).
 
 ## Simulated / planned (never presented as production)
 

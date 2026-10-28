@@ -63,7 +63,35 @@ predicate, object, context, language_or_domain, evidence_type}, source:
 structures knowledge, it never votes. Generic for any dataset type. Uses the
 configured OpenAI-compatible LLM (`FEN_LLM_*`); rule fallback offline.
 
-## 3c. Voting modes — `POST /candidates/{annotation_id}/vote`
+## 3c. Provenance-aware analysis — `POST /analyze` (T3, SPEC section 6)
+
+```json
+{ "documents": [ { "document_id": "d1", "title": "...", "text": "The hill Koshary marks the old trade route." } ] }
+```
+
+→ `200`: `{analysis_id, status: "proposed", model: {provider, requested,
+returned}, prompt_hash, created_at, latency_ms, analysis: {claims:
+[{claim_id, quote, statement, interpretation, document_id, ambiguities,
+uncertainty, review_recommendation, quote_verified, provenance_status}],
+contradictions: [{contradiction_id, claim_ids, kind, explanation,
+alternative_interpretations, quotes_verified}], summary},
+provenance_check: {claims_total, quotes_verified, problems, ok}}` —
+decision-support only (ADR-004): `status` stays `proposed` until a human
+decision is recorded (T4); a successful analysis is **never** approval or
+verified truth. `quote` (evidence in the source) and `interpretation`
+(model reading) are separate fields. Provenance checks traceability and
+evidence location against the documents in *this* request — not truth.
+
+- `422` — invalid input: no/duplicate documents, or more than 30 000
+  characters of document text in total (rejected before any provider call).
+- `502` — provider failed/not configured, or the model response failed the
+  structured contract after the single format-retry
+  (`detail.code = "invalid_analysis"`). No fallback to a prepared answer.
+  Logic: `services/common/analyze.py` over `services/common/analysis.py`
+  and `services/common/llm.py`. Contract schema:
+  `schemas/analysis/document-analysis.schema.json`.
+
+## 3d. Voting modes — `POST /candidates/{annotation_id}/vote`
 
 | Mode (`FEN_MOCK_VOTING`) | Semantics |
 |---|---|
