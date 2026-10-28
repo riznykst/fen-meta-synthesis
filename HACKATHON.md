@@ -100,6 +100,11 @@ Each line names the task commit that introduced it.
   the agent never generates them. Agent-made T8 artefacts are only
   `eval/dataset/TEMPLATE.json` and `eval/validate_dataset.py` (the gate
   also refuses examples without a human-checked source licence).
+- T9 — Demo & docs: `DEMO.md` (3-minute independent scenario, including the
+  offline SYNTHETIC fixture segment for the caught unverified quote),
+  one-command launcher `scripts/start_demo.py` (+ `scripts/demo_seed.sh`
+  wrapper; verified end-to-end live 2026-10-28), and the README
+  "Hackathon Scope" section.
 
 ## Rule that never moves
 

@@ -201,6 +201,37 @@ python scripts/generate_schemas.py   # only needed after changing services/commo
 pytest -q
 ```
 
+## Hackathon Scope (FEN × Meta, Oct–Nov 2026)
+
+Built on branch `hackathon/meta-ai-synthesis` (baseline tag
+`baseline-pre-hackathon` on the pre-hackathon `main`). The full boundary —
+what existed before, what was built during the event, and what stays
+simulated — is recorded in [HACKATHON.md](HACKATHON.md); unresolved
+questions are in [docs/OPEN_QUESTIONS.md](docs/OPEN_QUESTIONS.md).
+
+**Implemented and tested during the hackathon** (each item has unit tests
+and was run live against the Meta Model API on 2026-10-28): a real Meta
+integration through the existing OpenAI-compatible client
+(`muse-spark-1.3`, `https://api.meta.ai/v1`; see
+[docs/PROVIDERS.md](docs/PROVIDERS.md)); provenance-aware `POST /analyze`
+(claims with exact quotes kept separate from model interpretations,
+contradictions, automatic quote verification); human-only
+`POST /decisions` (accept/reject/dispute; an unverified quote cannot be
+accepted; decisions are immutable); `GET /provenance/{item_id}` (document
+→ quote → model proposal → human decisions); the Review screen
+([web/portal/review.html](web/portal/review.html)); and the evaluation
+harness with the B0 no-verification baseline
+([eval/REPORT.md](eval/REPORT.md)).
+
+**Simulated / not yet real:** the DAO behind `mock_fen_api/` remains a
+simulation (ADR-002); the decisions registry is an in-memory demo store;
+committed artifacts in `artifacts/` are withheld pending human review;
+corpus quality numbers await the human-supplied dataset (the agent
+supplies only the template and validator — no invented data), and the
+Baseten B1 comparison awaits provider access.
+
+Try it in 3 minutes: [DEMO.md](DEMO.md) (`python scripts/start_demo.py`).
+
 ## Repository layout
 
 ```
