@@ -58,6 +58,15 @@ Each line names the task commit that introduced it.
   (`mock_fen_api/analysis.py`, live 200 with 4 claims on `muse-spark-1.3`,
   2026-10-28) informed this contract; its legacy field aliases remain
   parseable.
+- Structured output (post-T10, owner-requested): `POST /analyze` now asks
+  Meta for schema-constrained decoding (`response_format=json_schema` with
+  the canonical contract from `services/common/analysis.py`; other
+  providers keep `json_object`, forced via `FEN_LLM_STRUCTURED_OUTPUT=1`).
+  Verified live 2026-10-28 through `services/common/analyze.py`:
+  `muse-spark-1.3` accepted the schema, returned 2 claims with both quotes
+  verified, and the result records `response_format: "json_schema"`.
+  `parse_analysis` still validates every response — the provider guarantee
+  does not replace the contract check.
 - T3 — `POST /analyze` endpoint in `mock_fen_api/main.py` on the canonical
   service: section 6 request/response, 422 on invalid input (including the
   30 000-character total limit, checked before any provider call), 502 on

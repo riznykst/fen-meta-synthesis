@@ -36,6 +36,7 @@ ENV_KEYS = (
     "FEN_LLM_TIMEOUT_S",
     "FEN_LLM_SYSTEM_ROLE",
     "FEN_LLM_JSON_MODE",
+    "FEN_LLM_STRUCTURED_OUTPUT",
 )
 
 SYSTEM_PROMPT = "You are a connectivity test assistant. Reply with exactly: FEN_META_OK"

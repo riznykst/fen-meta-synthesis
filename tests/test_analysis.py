@@ -81,6 +81,7 @@ class _FakeConfig:
     timeout_s = 5.0
     system_role = "system"
     json_mode = False
+    structured_output = False
 
 
 def _result(text):
@@ -95,6 +96,19 @@ def test_prompts_carry_contract_and_only_supplied_documents():
     assert "quote" in system and "interpretation" in system
     payload = json.loads(analysis.build_user_prompt(DOCS, focus="routes"))
     assert [d["document_id"] for d in payload["documents"]] == ["d1", "d2"]
+
+
+# ------------------------------------------------------- structured output ---
+def test_analysis_response_format_is_canonical_schema_without_legacy_alias():
+    fmt = analysis.analysis_response_format()
+    assert fmt["type"] == "json_schema"
+    assert fmt["json_schema"]["name"] == "DocumentAnalysis"
+    schema = fmt["json_schema"]["schema"]
+    claim_props = schema["$defs"]["ClaimDraft"]["properties"]
+    assert "quote" in claim_props and "document_id" in claim_props
+    # legacy input alias stays parseable but is not requested from the model
+    assert "contradiction_with" not in claim_props
+    assert schema["additionalProperties"] is False
 
 
 # ----------------------------------------------------------------- parser ---
@@ -209,6 +223,29 @@ def test_analyze_documents_result_shape_and_hash():
     assert result["latency_ms"] >= 0 and result["created_at"].endswith("Z")
     assert result["provenance_check"]["ok"] is True
     assert "secret-must-never-leak" not in json.dumps(result)
+
+
+def test_analyze_documents_uses_json_schema_for_meta_provider():
+    with mock.patch.object(
+        analyze_svc, "chat_completion_detailed", return_value=_result(SYNTHETIC_RESPONSE)
+    ) as call:
+        result = analyze_svc.analyze_documents(DOCS, _FakeConfig())
+    assert result["response_format"] == "json_schema"
+    kwargs = call.call_args.kwargs
+    assert kwargs["schema_name"] == "DocumentAnalysis"
+    assert kwargs["json_schema"]["$defs"]["ClaimDraft"]["properties"]["quote"]
+
+
+def test_analyze_documents_uses_json_object_for_other_providers():
+    class _Other(_FakeConfig):
+        base_url = "https://api.example.com/v1"
+
+    with mock.patch.object(
+        analyze_svc, "chat_completion_detailed", return_value=_result(SYNTHETIC_RESPONSE)
+    ) as call:
+        result = analyze_svc.analyze_documents(DOCS, _Other())
+    assert result["response_format"] == "json_object"
+    assert call.call_args.kwargs == {"json_mode": True}
 
 
 def test_analyze_documents_one_format_retry_then_success():

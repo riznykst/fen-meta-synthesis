@@ -91,7 +91,7 @@ only as a stand-in.
 
 This table is updated with every task commit. Nothing is listed as done
 without a test or a reproducible run. Current suites on this branch:
-**185 pytest + 35 Node tests + Playwright Review e2e**, all passing
+**190 pytest + 35 Node tests + Playwright Review e2e**, all passing
 (baseline was 125 + 18).
 
 ## Before vs. during the hackathon

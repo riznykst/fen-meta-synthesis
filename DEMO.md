@@ -92,7 +92,7 @@ Ctrl-C in the launcher terminal stops both services.
 
 ```bash
 python -m pytest -q          # backend + workflow tests
-node --test web/tests/*.test.js   # UI pure-function tests (28)
+node --test web/tests/*.test.js   # UI pure-function tests (35)
 python eval/validate_dataset.py   # dataset format gate (T8)
 ```
 

@@ -27,6 +27,7 @@ def _config(**overrides) -> LLMConfig:
     cfg.timeout_s = 5.0
     cfg.system_role = "system"
     cfg.json_mode = False
+    cfg.structured_output = False
     for key, value in overrides.items():
         setattr(cfg, key, value)
     return cfg
@@ -79,6 +80,26 @@ def test_json_mode_opt_in_sends_response_format():
         chat_completion_detailed(_config(), "sys", "usr", json_mode=True)
     _, kwargs = post.call_args
     assert kwargs["json"]["response_format"] == {"type": "json_object"}
+
+
+def test_json_schema_sends_structured_response_format():
+    schema = {"type": "object", "properties": {"ok": {"type": "boolean"}}, "required": ["ok"]}
+    with mock.patch("services.common.llm.requests.post", return_value=_ok_envelope()) as post:
+        chat_completion_detailed(_config(), "sys", "usr", json_schema=schema, schema_name="Check")
+    _, kwargs = post.call_args
+    assert kwargs["json"]["response_format"] == {
+        "type": "json_schema",
+        "json_schema": {"name": "Check", "schema": schema},
+    }
+
+
+def test_json_schema_takes_precedence_over_json_mode():
+    with mock.patch("services.common.llm.requests.post", return_value=_ok_envelope()) as post:
+        chat_completion_detailed(
+            _config(), "sys", "usr", json_mode=True, json_schema={"type": "object"}
+        )
+    _, kwargs = post.call_args
+    assert kwargs["json"]["response_format"]["type"] == "json_schema"
 
 
 def test_json_mode_from_config():

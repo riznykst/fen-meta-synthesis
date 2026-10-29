@@ -15,6 +15,11 @@ expose such an API. Configured purely via env:
                          provider's documented interface requires it)
     FEN_LLM_JSON_MODE    "1"/"true" to request response_format=json_object
                          by default where the provider supports it
+    FEN_LLM_STRUCTURED_OUTPUT
+                         "1"/"true" to allow callers to request
+                         response_format=json_schema (schema-constrained
+                         decoding, Meta Model API) — used by the analysis
+                         service; enabled automatically for api.meta.ai
 
 The provider never raises: callers get ``None`` on any failure so the
 pipeline can fall back to a deterministic rule (no blocking points).
@@ -62,6 +67,9 @@ class LLMConfig:
             "true",
             "yes",
         )
+        self.structured_output: bool = (
+            os.getenv("FEN_LLM_STRUCTURED_OUTPUT", "") or ""
+        ).lower() in ("1", "true", "yes")
 
     @property
     def enabled(self) -> bool:
@@ -69,14 +77,27 @@ class LLMConfig:
 
 
 def chat_completion_detailed(
-    config: LLMConfig, system: str, user: str, json_mode: Optional[bool] = None
+    config: LLMConfig,
+    system: str,
+    user: str,
+    json_mode: Optional[bool] = None,
+    json_schema: Optional[dict] = None,
+    schema_name: str = "StructuredOutput",
 ) -> Optional[LLMResult]:
     """Call POST {base_url}/chat/completions with a single-turn prompt.
 
     Returns an :class:`LLMResult` (text + provider metadata), or None on
     any failure/irregular response — callers must handle None (fallback
     path). Exactly one retry, and only after a network error
-    (connection error / timeout)."""
+    (connection error / timeout).
+
+    Output shaping: when ``json_schema`` (a JSON Schema dict) is given, the
+    request carries ``response_format={"type": "json_schema", ...}`` so the
+    provider constrains decoding to the schema (Meta Model API structured
+    output); this takes precedence over the weaker ``json_mode``
+    (``json_object``), kept for providers without schema support. The schema
+    is sent without ``strict`` (Meta treats output as schema-constrained
+    either way; omitting it accepts schemas outside the strict subset)."""
     if not config.enabled:
         return None
     url = f"{config.base_url.rstrip('/')}/chat/completions"
@@ -91,12 +112,18 @@ def chat_completion_detailed(
         ],
         "temperature": 0,
     }
-    effective_json_mode = config.json_mode if json_mode is None else json_mode
-    if effective_json_mode:
-        # JSON mode where the provider supports it (Meta chat completions
-        # supports structured/JSON output); opt-in so providers without it
-        # are never broken by default.
-        payload["response_format"] = {"type": "json_object"}
+    if json_schema is not None:
+        payload["response_format"] = {
+            "type": "json_schema",
+            "json_schema": {"name": schema_name, "schema": json_schema},
+        }
+    else:
+        effective_json_mode = config.json_mode if json_mode is None else json_mode
+        if effective_json_mode:
+            # JSON mode where the provider supports it (Meta chat completions
+            # supports structured/JSON output); opt-in so providers without it
+            # are never broken by default.
+            payload["response_format"] = {"type": "json_object"}
 
     for attempt in range(2):  # initial call + exactly one network retry
         try:
@@ -123,11 +150,18 @@ def chat_completion_detailed(
 
 
 def chat_completion(
-    config: LLMConfig, system: str, user: str, json_mode: Optional[bool] = None
+    config: LLMConfig,
+    system: str,
+    user: str,
+    json_mode: Optional[bool] = None,
+    json_schema: Optional[dict] = None,
+    schema_name: str = "StructuredOutput",
 ) -> Optional[str]:
     """Backward-compatible text-only wrapper around
     :func:`chat_completion_detailed` (existing callers keep working)."""
-    result = chat_completion_detailed(config, system, user, json_mode=json_mode)
+    result = chat_completion_detailed(
+        config, system, user, json_mode=json_mode, json_schema=json_schema, schema_name=schema_name
+    )
     return result.text if result is not None else None
 
 

@@ -70,7 +70,8 @@ configured OpenAI-compatible LLM (`FEN_LLM_*`); rule fallback offline.
 ```
 
 → `200`: `{analysis_id, status: "proposed", model: {provider, requested,
-returned}, prompt_hash, created_at, latency_ms, analysis: {claims:
+returned}, usage, response_format: "json_schema" | "json_object",
+prompt_hash, created_at, latency_ms, analysis: {claims:
 [{claim_id, quote, statement, interpretation, document_id, ambiguities,
 uncertainty, review_recommendation, quote_verified, provenance_status}],
 contradictions: [{contradiction_id, claim_ids, kind, explanation,
@@ -89,7 +90,10 @@ evidence location against the documents in *this* request — not truth.
   (`detail.code = "invalid_analysis"`). No fallback to a prepared answer.
   Logic: `services/common/analyze.py` over `services/common/analysis.py`
   and `services/common/llm.py`. Contract schema:
-  `schemas/analysis/document-analysis.schema.json`.
+  `schemas/analysis/document-analysis.schema.json`. For Meta endpoints the
+  same schema is also sent as `response_format=json_schema`
+  (schema-constrained decoding); `parse_analysis` still validates every
+  response, so providers without that guarantee stay safe.
 
 ## 3d. Human review decision — `POST /decisions` (T4, SPEC section 6)
 

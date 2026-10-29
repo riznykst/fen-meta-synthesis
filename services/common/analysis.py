@@ -172,6 +172,31 @@ _FORBIDDEN_ASSERTIONS = (
 )
 
 
+def analysis_json_schema() -> dict:
+    """JSON Schema for the model's structured output (provider-side).
+
+    Derived from the same :class:`AnalysisDraft` Pydantic contract the parser
+    validates (identical to ``schemas/analysis/document-analysis.schema.json``),
+    minus the legacy ``contradiction_with`` input alias: recorded legacy
+    responses stay parseable, but schema-constrained decoding is asked for
+    the canonical field names only."""
+    schema = json.loads(json.dumps(AnalysisDraft.model_json_schema()))
+    claim_props = schema.get("$defs", {}).get("ClaimDraft", {}).get("properties", {})
+    claim_props.pop("contradiction_with", None)
+    return schema
+
+
+def analysis_response_format(name: str = "DocumentAnalysis") -> dict:
+    """``response_format`` value asking the provider (Meta Model API
+    structured output) to constrain decoding to :func:`analysis_json_schema`.
+    No ``strict`` flag: Meta constrains output to the schema either way, and
+    omitting it accepts schemas outside the strict subset (HTTP 400 guard)."""
+    return {
+        "type": "json_schema",
+        "json_schema": {"name": name, "schema": analysis_json_schema()},
+    }
+
+
 def build_system_prompt() -> str:
     """System prompt carrying the output contract (model proposes only)."""
     return (

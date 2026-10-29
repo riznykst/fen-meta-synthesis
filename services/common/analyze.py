@@ -4,6 +4,12 @@ Uses ``build_system_prompt`` / ``build_user_prompt`` / ``parse_analysis`` /
 ``verify_provenance`` from :mod:`services.common.analysis` and the provider
 client from :mod:`services.common.llm` (``chat_completion_detailed``).
 
+Output shaping: Meta providers get schema-constrained decoding
+(``response_format=json_schema`` with the canonical contract from
+:mod:`services.common.analysis`); other providers keep ``json_object``
+mode. ``parse_analysis`` still validates every response — the guarantee is
+provider-specific, the contract check is not.
+
 Failure policy (SPEC T2/T3) — no prepared answers, no silent substitution:
 
 - Provider not configured / provider failure -> :class:`AnalysisUnavailable`
@@ -30,6 +36,7 @@ from typing import List, Optional
 from services.common.analysis import (
     AnalysisParseError,
     SourceDocument,
+    analysis_response_format,
     build_system_prompt,
     build_user_prompt,
     parse_analysis,
@@ -102,7 +109,27 @@ def analyze_documents(
     prompt_hash = _prompt_hash(system, user)
     started = time.perf_counter()
 
-    result = chat_completion_detailed(config, system, user, json_mode=True)
+    # Structured output (Meta Model API): when the provider supports
+    # schema-constrained decoding (api.meta.ai, or FEN_LLM_STRUCTURED_OUTPUT=1
+    # for any provider), ask for the canonical contract as a JSON Schema so
+    # decoding itself — not post-hoc parsing — guarantees the shape. Other
+    # OpenAI-compatible providers keep the json_object mode. Either way the
+    # response still goes through parse_analysis: a schema guarantee from
+    # one provider must not become a parser assumption for all of them.
+    use_structured = bool(getattr(config, "structured_output", False)) or (
+        "api.meta.ai" in (config.base_url or "")
+    )
+    _fmt = analysis_response_format()
+    call_kwargs = (
+        {
+            "json_schema": _fmt["json_schema"]["schema"],
+            "schema_name": _fmt["json_schema"]["name"],
+        }
+        if use_structured
+        else {"json_mode": True}
+    )
+
+    result = chat_completion_detailed(config, system, user, **call_kwargs)
     if result is None:
         raise AnalysisUnavailable("LLM provider unavailable or returned an unusable response")
 
@@ -114,7 +141,7 @@ def analyze_documents(
             analysis_id,
             first_error.errors[:2],
         )
-        retry = chat_completion_detailed(config, system, user + _FORMAT_REMINDER, json_mode=True)
+        retry = chat_completion_detailed(config, system, user + _FORMAT_REMINDER, **call_kwargs)
         if retry is None:
             _preserve_raw(analysis_id, [result.text], first_error.errors)
             raise AnalysisUnavailable(
@@ -138,6 +165,7 @@ def analyze_documents(
             "returned": result.model_returned,
         },
         "usage": result.usage,
+        "response_format": "json_schema" if use_structured else "json_object",
         "prompt_hash": prompt_hash,
         "created_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "latency_ms": latency_ms,
