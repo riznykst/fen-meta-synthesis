@@ -94,7 +94,8 @@ function renderCandidates(data) {
     ).join("");
     return (
       "<tr>" +
-      "<td><code>" + escapeHtml(c.annotation_id) + "</code><br><span class='note'>" + escapeHtml(c.document_id || "") + "</span></td>" +
+      "<td><code>" + escapeHtml(c.annotation_id) + "</code><br><span class='note'>" + escapeHtml(c.document_id || "") + "</span><br>" +
+      '<a href="/web/portal/candidate.html?id=' + encodeURIComponent(c.annotation_id) + '" title="What am I voting on?">Details — what am I voting on?</a></td>' +
       "<td>" + escapeHtml(c.entity_label || "—") + "</td>" +
       "<td>" + statusBadge(c.status) + "</td>" +
       "<td>" + rec + "</td>" +

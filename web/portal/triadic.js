@@ -170,7 +170,8 @@ function renderConsensus() {
     return '<div class="item">' +
       '<div style="font-size:12px;margin-bottom:3px"><b>' + esc((c.triple || {}).subject || c.entity_label) + "</b> — " +
       esc((c.triple || {}).predicate || "") + " — <b>" + esc((c.triple || {}).object || "") + "</b></div>" +
-      '<div class="meta">#' + esc(c.annotation_id).slice(-5) + " · by " + esc(c.submitter || "?") + " · " + esc((c.triple || {}).language_or_domain || "") + "</div>" +
+      '<div class="meta">#' + esc(c.annotation_id).slice(-5) + " · by " + esc(c.submitter || "?") + " · " + esc((c.triple || {}).language_or_domain || "") +
+      ' · <a href="/web/portal/candidate.html?id=' + encodeURIComponent(c.annotation_id) + '">Details — what am I voting on?</a></div>' +
       '<div class="bar"><div style="width:' + pct + '%"></div></div>' +
       '<div class="prow"><span style="color:' + C.mu + '">' + scoreRow + '</span><span style="color:' + C.mu + '">threshold ' + threshold + "</span></div>" +
       (reviews.length ? '<div style="border-top:1px solid #e3ded2;padding-top:7px;margin-bottom:8px"><div class="lbl">① Peer reviews</div>' +

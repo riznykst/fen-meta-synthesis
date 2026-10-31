@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Validation Commons — Candidate details (what am I voting on?)</title>
+<style>
+  body { margin:0; min-height:100vh; background:radial-gradient(circle at 15% 20%,rgba(255,255,255,.6),transparent 40%),radial-gradient(circle at 85% 75%,rgba(255,255,255,.5),transparent 45%),linear-gradient(135deg,#efece6,#e7e4dc); font-family:system-ui,sans-serif; color:#1c1b1f; padding:36px 16px; box-sizing:border-box; }
+  .wrap { max-width:760px; margin:0 auto; }
+  header { text-align:center; margin-bottom:22px; }
+  header h1 { font-family:Georgia,serif; font-size:21px; margin:0 0 4px; font-weight:400; }
+  header .sub { font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:#6b6560; }
+  header .switch { display:inline-block; margin-top:10px; font-size:11px; color:#2d5a8e; border:1px solid #2d5a8e55; border-radius:999px; padding:4px 12px; text-decoration:none; background:#fff; }
+  .panel { background:#fdfcfa; border:1.5px solid #2d5a8e; border-radius:18px; padding:20px 18px; margin-bottom:18px; }
+  .item h2.statement { font-family:Georgia,serif; font-size:22px; font-weight:400; margin:4px 0 10px; }
+  .item h3 { font-family:Georgia,serif; font-weight:400; margin:16px 0 6px; }
+  table.fields { border-collapse:collapse; width:100%; font-size:12.5px; }
+  table.fields th { text-align:left; color:#6b6560; font-size:10px; letter-spacing:.09em; text-transform:uppercase; padding:5px 8px 5px 0; vertical-align:top; width:150px; }
+  table.fields td { padding:5px 0; border-bottom:1px solid #e3ded2; }
+  .meta { font-size:10.5px; color:#6b6560; }
+  .review { font-size:12px; background:#f7f5f0; border-radius:6px; padding:7px 9px; margin-bottom:6px; line-height:1.45; }
+  ul.meaning, ul.prov { font-size:12.5px; line-height:1.55; padding-left:18px; }
+  .decision-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+  .decision-btn { flex:1 1 140px; min-height:44px; border:none; border-radius:8px; color:#fff; font-size:12.5px; font-weight:700; cursor:pointer; padding:10px 8px; text-transform:capitalize; }
+  .decision-btn.validated { background:#2e7d5b; } .decision-btn.rejected { background:#b23a3a; } .decision-btn.disputed { background:#8b6914; }
+  .error { color:#b23a3a; font-size:12.5px; line-height:1.5; }
+  @media (max-width:480px) { body { padding:16px 8px; } .decision-btn { flex:1 1 44%; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Candidate details</h1>
+    <div class="sub">What you are voting on — read before you decide</div>
+    <a class="switch" href="/web/portal/index.html">← Candidates &amp; community voting</a>
+    <a class="switch" href="/web/portal/triadic.html">Triadic view</a>
+    <a class="switch" href="/web/portal/review.html">Review — Meta demo</a>
+  </header>
+
+  <section class="panel" aria-label="Candidate details">
+    <div id="detail"><p class="meta">Loading candidate…</p></div>
+  </section>
+</div>
+<script src="/web/shared/escape.js"></script>
+<script src="/web/shared/api-base.js"></script>
+<script src="/web/shared/theme.js"></script>
+<script src="/web/portal/candidate.js"></script>
+</body>
+</html>

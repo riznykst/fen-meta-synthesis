@@ -135,6 +135,12 @@ Each line names the task commit that introduced it.
   (`findQuoteRange`/`highlightQuoteHtml`, whitespace-tolerant, escaped);
   an optional third source document can be added; Playwright e2e covers
   the Review flow with an intercepted (SYNTHETIC) API.
+- Voter-facing candidate details: `web/portal/candidate.html` explains what
+  a vote on a Candidates & community-voting item means (entity, votes,
+  quorum, peer assessments, recorded decision, registry record, and the
+  effect of each verdict) before the voter casts it; linked as "Details —
+  what am I voting on?" from the classic candidates list and the Triadic
+  consensus list.
 
 ## Rule that never moves
 
