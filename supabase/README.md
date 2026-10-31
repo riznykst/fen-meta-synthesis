@@ -136,27 +136,35 @@ the publishable key; the key can also be supplied per visit:
 /web/portal/registry.html?supabase_url=https://<project>.supabase.co&supabase_anon_key=<publishable key>
 ```
 
-## Writing from the backend (next step, not wired yet)
+## Writing from the backend — WIRED
 
-The demo API still writes to its local store. Wiring it to Supabase means, in
-`mock_fen_api/main.py`:
+`mock_fen_api/supabase_registry.py` connects with `SUPABASE_DB_URL` (server
+secret, never shipped to the browser) and the demo API now writes through:
 
-1. on `POST /analyze`: insert into `analyses` + `analysis_documents` + `items`
-   with the service-role key;
-2. on `POST /decisions`: call `rpc('record_decision', {...})` — the database
-   then enforces the accept-lock too;
-3. on `GET /registry` / `GET /records/{id}`: read from
-   `item_status_current` / the same tables.
+- `POST /analyze` → `analyses` + `analysis_documents` + `items` (status is
+  `proposed` by construction — the schema forbids anything else);
+- `POST /decisions` → `select record_decision(...)`, i.e. the governed SQL
+  function, so the accept-lock and immutability are enforced by the database
+  too; the response gains `supabase_persisted: true|false`;
+- `GET /registry` → reads `registry_public` from Supabase when configured, and
+  falls back to the local JSONL store if the database is unreachable. The
+  response says which one answered: `"source": "supabase" | "local"`.
 
-That is deliberately **not** claimed as done: the schema, the RPC and the
-read-only frontend surface exist and are tested; the demo API migration is
-the next step.
+Behaviour without `SUPABASE_DB_URL` is unchanged: local JSONL/in-memory only,
+which is what the offline test suite exercises (a fake registry is injected).
+
+Verified live on 2026-10-31: a real `POST /analyze` through the demo API created
+one `analyses` row, two `analysis_documents` rows and four `items` (three
+claims, one contradiction), all `proposed`, and `registry_public` stayed empty —
+proposals are not knowledge. The verification rows were then removed so the
+durable history starts clean.
 
 ## Status
 
-- Schema, RLS, RPC, views: written, reviewable in `migrations/` — **not yet
-  applied** to the project (no Postgres driver or `psql` available in the
-  working environment at the time of writing).
-- Read-only frontend adapter (`web/shared/supabase.js`) and the
-  `registry.html` page: implemented, covered by Node tests.
-- Demo API → Supabase writes: planned.
+- Schema, RLS, RPC, views: applied to the project and verified (rollback-based
+  checks: accept-lock, immutability, schema constraints — 7/7 pass).
+- Demo API → Supabase writes: implemented and tested (`tests/test_supabase_sync.py`).
+- Read-only frontend (`web/portal/registry.html`, `/registry` on Vercel):
+  implemented, reads the public view with the publishable key.
+- Still open: the first *human* decision has to be recorded from the UI — the
+  agent does not create decision records on a person's behalf.

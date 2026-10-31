@@ -31,6 +31,12 @@ ENV_KEYS = (
     "FEN_LLM_SYSTEM_ROLE",
     "FEN_LLM_JSON_MODE",
     "FEN_LLM_STRUCTURED_OUTPUT",
+    # Durable registry (optional): analyses + decisions are written to Supabase
+    # when SUPABASE_DB_URL is present; GET /registry then reads from there.
+    "SUPABASE_DB_URL",
+    "SUPABASE_URL",
+    "SUPABASE_ANON_KEY",
+    "SUPABASE_SERVICE_ROLE_KEY",
 )
 
 

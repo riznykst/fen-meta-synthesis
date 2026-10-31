@@ -94,6 +94,7 @@ from mock_fen_api.decisions import (
 )
 from mock_fen_api.scaffold import run_scaffold
 from mock_fen_api.store import store_from_env
+from mock_fen_api.supabase_registry import SupabaseRegistry
 
 setup_logging("mock-fen-api", level=log_level_from_env())
 logger = logging.getLogger(__name__)
@@ -175,6 +176,54 @@ _reputation: Dict[str, int] = {}
 _state_lock = threading.Lock()
 
 _reload_store()
+
+# ---- Durable registry (Supabase) -------------------------------------------
+# When SUPABASE_DB_URL is set, analyses and human decisions are also written to
+# the Supabase database, and GET /registry reads the accepted knowledge from
+# there. Unset (offline tests, plain uvicorn) = local JSONL/in-memory only.
+_supabase = SupabaseRegistry.from_env()
+
+
+def get_supabase():
+    """Active Supabase writer, or None. Tests inject via app.state.supabase."""
+    injected = getattr(app.state, "supabase", None)
+    if injected is not None:
+        return injected
+    return _supabase
+
+
+def _sync_analysis(stored: dict, documents: list) -> bool:
+    """Persist one analysis to Supabase. Never breaks the request."""
+    registry = get_supabase()
+    if registry is None:
+        return False
+    try:
+        registry.save_analysis(stored, [d.model_dump(mode="json") for d in documents])
+        logger.info("supabase: persisted analysis %s", stored.get("analysis_id"))
+        return True
+    except Exception:  # noqa: BLE001 - durability must not fail the request
+        logger.exception("supabase: could not persist analysis %s", stored.get("analysis_id"))
+        return False
+
+
+def _sync_decision(record: dict) -> bool:
+    """Record one human decision through the governed Supabase function."""
+    registry = get_supabase()
+    if registry is None:
+        return False
+    try:
+        registry.record_decision(
+            analysis_id=record["analysis_id"],
+            item_id=record["item_id"],
+            verdict=record["verdict"],
+            reviewer=record["reviewer"],
+            comment=record.get("comment", ""),
+        )
+        logger.info("supabase: persisted decision %s", record.get("decision_id"))
+        return True
+    except Exception:  # noqa: BLE001 - the local record still stands
+        logger.exception("supabase: could not persist decision %s", record.get("decision_id"))
+        return False
 
 # ---- SSE event bus (real-time UI updates — replaces 3s polling) ------------
 _event_subscribers: set = set()
@@ -663,6 +712,7 @@ def analyze(payload: AnalyzeBody):
         # can show document -> quote; the response body stays section-6.
         _analyses[result["analysis_id"]] = stored
     _store.append("analysis", stored)
+    _sync_analysis(stored, payload.documents)
     return result
 
 
@@ -748,6 +798,7 @@ def create_decision(payload: ReviewDecisionBody):
     with _state_lock:
         _decisions.append(record)
     _store.append("decision", record)
+    supabase_persisted = _sync_decision(record)
 
     publisher = getattr(app.state, "decision_publisher", None)
     try:
@@ -765,6 +816,7 @@ def create_decision(payload: ReviewDecisionBody):
         "decision_id": record["decision_id"],
         "recorded_at": record["recorded_at"],
         "event_published": event_published,
+        "supabase_persisted": supabase_persisted,
     }
 
 
@@ -772,10 +824,20 @@ def create_decision(payload: ReviewDecisionBody):
 def get_registry():
     """Registry showcase: items whose CURRENT status is accepted (latest
     human decision wins), newest first. This is where validated knowledge
-    lands in the demo — each entry links to its exportable record."""
+    lands in the demo — each entry links to its exportable record.
+
+    With Supabase configured the durable database is the source of truth;
+    otherwise the local store answers. `source` says which one answered."""
+    registry = get_supabase()
+    if registry is not None:
+        try:
+            records = registry.load_registry()
+            return {"records": records, "count": len(records), "source": "supabase"}
+        except Exception:  # noqa: BLE001 - keep the demo readable on an outage
+            logger.exception("supabase registry read failed; falling back to the local store")
     with _state_lock:
         records = accepted_records(_analyses, list(_decisions))
-    return {"records": records, "count": len(records)}
+    return {"records": records, "count": len(records), "source": "local"}
 
 
 @app.get("/records/{item_id}")
