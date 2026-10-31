@@ -193,3 +193,80 @@ def build_provenance(analyses: dict, decisions: list, item_id: str,
         "decisions": item_decisions,
         "chain_complete": bool(document or quotes) and bool(item_decisions),
     }
+
+
+def build_record(analyses: dict, decisions: list, item_id: str,
+                 analysis_id: Optional[str] = None) -> Optional[dict]:
+    """Exportable JSON-LD record for one DECIDED item, or None.
+
+    Returns None when the item is unknown; raises ValueError when the item
+    exists but no human decision has been recorded yet — a record is a
+    decision artefact, and a model proposal alone must never be exportable
+    as one. The record carries the full chain so it can later be ingested
+    into a knowledge graph without rework: claim, quote, source document,
+    model + prompt hash, and every human decision in order."""
+    chain = build_provenance(analyses, decisions, item_id, analysis_id)
+    if chain is None:
+        return None
+    if not chain["decisions"]:
+        raise ValueError("no human decision recorded for this item yet")
+    proposal = chain["model_proposal"]
+    item = proposal["item"]
+    record = {
+        "@context": {
+            "schema": "https://schema.org/",
+            "gfen": "https://w3id.org/got/fen/ontology#",
+        },
+        "@id": f"urn:fen:record:{chain['analysis_id']}:{item_id}",
+        "@type": "gfen:ValidationRecord",
+        "item_id": item_id,
+        "item_type": chain["item_type"],
+        "status": chain["status"],
+        "analysis_id": chain["analysis_id"],
+        "source_documents": chain["documents"],
+        "quotes": chain["quotes"],
+        "claim": item,
+        "model_proposal": {
+            "model": proposal.get("model"),
+            "prompt_hash": proposal.get("prompt_hash"),
+            "created_at": proposal.get("created_at"),
+        },
+        "decisions": chain["decisions"],
+        "exported_from": "FEN x Meta demo registry (in-memory + JSONL store when configured)",
+    }
+    return record
+
+
+def accepted_records(analyses: dict, decisions: list) -> list:
+    """Registry showcase: every item whose CURRENT status is accepted
+    (latest human decision wins), newest decision first."""
+    latest = {}
+    for record in decisions:
+        latest[(record.get("analysis_id"), record.get("item_id"))] = record
+    out = []
+    for (analysis_id, item_id), record in latest.items():
+        if record.get("status") != "accepted":
+            continue
+        analysis = analyses.get(analysis_id) or {}
+        item = None
+        for item_type in ("claim", "contradiction"):
+            item = find_item(analysis, item_type, item_id)
+            if item is not None:
+                break
+        out.append({
+            "analysis_id": analysis_id,
+            "item_id": item_id,
+            "item_type": record.get("item_type"),
+            "status": "accepted",
+            "statement": (item or {}).get("statement") or (item or {}).get("quote") or "",
+            "quote": (item or {}).get("quote") or "",
+            "document_id": (item or {}).get("document_id") or "",
+            "reviewer": record.get("reviewer"),
+            "verdict": record.get("verdict"),
+            "comment": record.get("comment", ""),
+            "recorded_at": record.get("recorded_at"),
+            "decision_id": record.get("decision_id"),
+            "export_path": f"/records/{item_id}?analysis_id={analysis_id}",
+        })
+    out.sort(key=lambda r: r.get("recorded_at") or "", reverse=True)
+    return out

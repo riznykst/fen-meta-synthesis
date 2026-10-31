@@ -81,14 +81,19 @@ from pydantic import BaseModel, Field
 from services.common.analysis import AnalysisParseError, SourceDocument
 from services.common.analyze import AnalysisUnavailable, analyze_documents
 
+from fastapi.responses import JSONResponse
+
 from mock_fen_api.decisions import (
     ReviewDecisionBody,
+    accepted_records,
     build_event,
     build_provenance,
+    build_record,
     find_item,
     item_is_verified,
 )
 from mock_fen_api.scaffold import run_scaffold
+from mock_fen_api.store import store_from_env
 
 setup_logging("mock-fen-api", level=log_level_from_env())
 logger = logging.getLogger(__name__)
@@ -141,6 +146,23 @@ MAX_ANALYZE_CHARS = 30_000  # total document text limit for POST /analyze (T3)
 _decisions: list = []
 _decision_events: list = []
 
+# Persistence (owner-requested): when FEN_STORE_PATH is set (start_demo.py
+# sets artifacts/store.jsonl), analyses + decisions are appended to a JSONL
+# log and replayed here on startup, so a restart no longer loses human
+# verdicts. Unset (tests, plain uvicorn) = purely in-memory.
+_store = store_from_env()
+
+
+def _reload_store() -> None:
+    analyses, decisions = _store.load()
+    with _state_lock:
+        _analyses.update(analyses)
+        _decisions.extend(decisions)
+    if analyses or decisions:
+        logger.info(
+            "store replayed: %d analyses, %d decisions", len(analyses), len(decisions)
+        )
+
 
 class AnalyzeBody(BaseModel):
     """POST /analyze request body (SPEC section 6)."""
@@ -151,6 +173,8 @@ _reputation_history: list = []
 # Voter/contributor reputation (demo QV mode): name -> points.
 _reputation: Dict[str, int] = {}
 _state_lock = threading.Lock()
+
+_reload_store()
 
 # ---- SSE event bus (real-time UI updates — replaces 3s polling) ------------
 _event_subscribers: set = set()
@@ -630,13 +654,15 @@ def analyze(payload: AnalyzeBody):
             status_code=502,
             detail={"code": "invalid_analysis", "errors": exc.errors},
         ) from exc
+    stored = {
+        **result,
+        "_documents": [d.model_dump(mode="json") for d in payload.documents],
+    }
     with _state_lock:
         # The stored copy also keeps the source documents so T5 provenance
         # can show document -> quote; the response body stays section-6.
-        _analyses[result["analysis_id"]] = {
-            **result,
-            "_documents": [d.model_dump(mode="json") for d in payload.documents],
-        }
+        _analyses[result["analysis_id"]] = stored
+    _store.append("analysis", stored)
     return result
 
 
@@ -670,6 +696,7 @@ def create_decision(payload: ReviewDecisionBody):
     record = event.model_dump(mode="json")
     with _state_lock:
         _decisions.append(record)
+    _store.append("decision", record)
 
     publisher = getattr(app.state, "decision_publisher", None)
     try:
@@ -688,6 +715,38 @@ def create_decision(payload: ReviewDecisionBody):
         "recorded_at": record["recorded_at"],
         "event_published": event_published,
     }
+
+
+@app.get("/registry")
+def get_registry():
+    """Registry showcase: items whose CURRENT status is accepted (latest
+    human decision wins), newest first. This is where validated knowledge
+    lands in the demo — each entry links to its exportable record."""
+    with _state_lock:
+        records = accepted_records(_analyses, list(_decisions))
+    return {"records": records, "count": len(records)}
+
+
+@app.get("/records/{item_id}")
+def get_record(item_id: str, analysis_id: Optional[str] = None):
+    """Export one DECIDED item as a JSON-LD validation record (claim,
+    quote, source documents, model + prompt hash, all human decisions).
+    404 — unknown item; 409 — item exists but no human decision yet (a
+    model proposal alone is never exportable as a record)."""
+    with _state_lock:
+        try:
+            record = build_record(_analyses, list(_decisions), item_id, analysis_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+    if record is None:
+        raise HTTPException(status_code=404, detail="unknown item_id")
+    return JSONResponse(
+        content=record,
+        media_type="application/ld+json",
+        headers={
+            "Content-Disposition": f'attachment; filename="record-{item_id}.jsonld"'
+        },
+    )
 
 
 @app.get("/provenance/{item_id}")

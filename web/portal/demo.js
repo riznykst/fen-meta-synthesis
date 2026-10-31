@@ -123,6 +123,29 @@
     return null;
   }
 
+  // Registry showcase (pure): where accepted knowledge lands. Export links
+  // point at GET /records/{item_id} on the mock API base passed in.
+  function escHtml(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function renderRegistryHtml(records, exportBase) {
+    if (!records || !records.length) {
+      return '<p class="note">Registry is empty — accepted proposals will appear here with their record.</p>';
+    }
+    return records.map(function (r) {
+      return '<div class="registry-item"><span class="badge b-gr">Accepted knowledge</span> '
+        + "<b>" + escHtml(r.statement || r.item_id) + "</b>"
+        + '<div class="meta">decided by ' + escHtml(r.reviewer) + " · " + escHtml(r.recorded_at)
+        + " · document " + escHtml(r.document_id) + "</div>"
+        + (r.quote ? '<blockquote class="quote">' + escHtml(r.quote) + "</blockquote>" : "")
+        + '<a class="exp" href="' + escHtml((exportBase || "") + r.export_path)
+        + '" download>Download record (JSON-LD)</a></div>';
+    }).join("");
+  }
+
   var api = {
     DATASETS: DATASETS,
     datasetIds: datasetIds,
@@ -130,6 +153,7 @@
     datasetFieldValues: datasetFieldValues,
     parseUploadedFile: parseUploadedFile,
     uploadSizeError: uploadSizeError,
+    renderRegistryHtml: renderRegistryHtml,
     MAX_UPLOAD_DOCS: MAX_UPLOAD_DOCS,
     MAX_ANALYZE_CHARS: MAX_ANALYZE_CHARS,
   };
@@ -197,10 +221,35 @@
     }
   }
 
+  var MOCK_BASE = global.fenApiBase
+    ? global.fenApiBase("fen_mock_base", "http://localhost:8100")
+    : "http://localhost:8100";
+
+  async function refreshRegistry() {
+    var box = $("registry");
+    if (!box) return;
+    try {
+      var resp = await fetch(MOCK_BASE + "/registry");
+      if (!resp.ok) throw new Error("HTTP " + resp.status);
+      var data = await resp.json();
+      box.innerHTML = renderRegistryHtml(data.records || [], MOCK_BASE);
+    } catch (e) {
+      box.innerHTML = '<p class="note">Registry unavailable — start the local backend to see accepted knowledge.</p>';
+    }
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     ["synthetic", "sumerian"].forEach(function (key) {
       var btn = $("dataset-" + key);
       if (btn) btn.addEventListener("click", function () { applyDataset(key); });
+    });
+    refreshRegistry();
+    // A recorded decision changes the registry; refresh shortly after any
+    // vote click (the decision POST resolves well within this delay).
+    document.addEventListener("click", function (ev) {
+      if (ev.target.closest("[data-vote]") || ev.target.closest("[data-action='decide']")) {
+        setTimeout(refreshRegistry, 900);
+      }
     });
     var input = $("docUpload");
     if (input) {

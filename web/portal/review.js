@@ -143,6 +143,9 @@
       + (amb.length ? '<p class="meta">Ambiguities: ' + amb.map(esc).join("; ") + "</p>" : "")
       + quoteNote
       + dictionaryBadgeHtml(claim)
+      + (status === "accepted"
+        ? '<div class="decision-row"><button class="decision-btn prov" data-action="export" data-item="' + esc(claim.claim_id) + '">Download record (JSON-LD)</button></div>'
+        : "")
       + '<div class="decision-row"><button class="decision-btn prov" data-action="highlight" data-item="' + esc(claim.claim_id) + '">Show in source</button></div>'
       + decisionButtons(claim.claim_id, "claim", claim)
       + "</article>";
@@ -400,9 +403,32 @@
         }).join("")
         + '<p class="meta">Model proposal · ' + esc((chain.model_proposal.model || {}).returned || "")
         + " · prompt " + esc(chain.model_proposal.prompt_hash || "") + " · " + esc(chain.model_proposal.created_at || "") + "</p>"
+        + (chain.status === "accepted"
+          ? '<div class="decision-row"><button class="decision-btn prov" data-action="export" data-item="' + esc(itemId) + '">Download record (JSON-LD)</button></div>'
+          : "")
         + "<h4>Decision history</h4>" + renderDecisionHistory(chain.decisions);
     } catch (e) {
       box.innerHTML = '<p class="error">' + esc(errorMessage(e.status || 404, e.message)) + "</p>";
+    }
+  }
+
+  async function downloadRecord(itemId) {
+    try {
+      var resp = await fetch(MOCK + "/records/" + encodeURIComponent(itemId)
+        + "?analysis_id=" + encodeURIComponent(state.analysis.analysis_id));
+      if (!resp.ok) throw new Error("HTTP " + resp.status);
+      var blob = await resp.blob();
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = "record-" + itemId + ".jsonld";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      var box = $("reviewError");
+      if (box) box.textContent = "Record download failed: " + e.message;
     }
   }
 
@@ -423,6 +449,7 @@
       if (btn.dataset.action === "decide") decide(btn.dataset.item, btn.dataset.type, btn.dataset.verdict);
       if (btn.dataset.action === "provenance") showProvenance(btn.dataset.item);
       if (btn.dataset.action === "highlight") showInSource(btn.dataset.item);
+      if (btn.dataset.action === "export") downloadRecord(btn.dataset.item);
     });
   });
 })(typeof window !== "undefined" ? window : globalThis);

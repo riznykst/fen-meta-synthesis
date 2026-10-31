@@ -63,6 +63,44 @@ test("demo upload fills document fields from a file", async ({ page }) => {
   await expect(page.locator("#uploadNote")).toContainText("Loaded 1 document(s) from my-source.txt");
 });
 
+test("demo registry shows accepted knowledge with a record export", async ({ page }) => {
+  let decided = false;
+  await page.route("**/analyze", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", headers: CORS, body: JSON.stringify(ANALYSIS) })
+  );
+  await page.route("**/decisions", (route) => {
+    decided = true;
+    route.fulfill({
+      status: 201, contentType: "application/json", headers: CORS,
+      body: JSON.stringify({ decision_id: "dec_1", recorded_at: "2026-10-31T12:01:00Z", event_published: true }),
+    });
+  });
+  await page.route("**/registry", (route) =>
+    route.fulfill({
+      status: 200, contentType: "application/json", headers: CORS,
+      body: JSON.stringify({
+        count: decided ? 1 : 0,
+        records: decided
+          ? [{
+              analysis_id: "an_demo", item_id: "c1", item_type: "claim", status: "accepted",
+              statement: "lu [PERSON] means person", quote: "lu [PERSON] is listed as a noun",
+              document_id: "d1", reviewer: "reviewer-1", verdict: "accept", comment: "",
+              recorded_at: "2026-10-31T12:01:00Z", decision_id: "dec_1",
+              export_path: "/records/c1?analysis_id=an_demo",
+            }]
+          : [],
+      }),
+    })
+  );
+  await page.goto(DEMO);
+  await expect(page.locator("#registry")).toContainText("Registry is empty");
+  await page.click("#analyzeBtn");
+  await page.locator("article[data-item='c1'] [data-verdict='accept']").click();
+  await expect(page.locator("article[data-item='c1']")).toContainText("Accepted by a human reviewer");
+  await expect(page.locator("#registry")).toContainText("Accepted knowledge", { timeout: 10000 });
+  await expect(page.locator("#registry a.exp")).toHaveAttribute("href", /\/records\/c1/);
+});
+
 test("demo analysis shows proposals with the ePSD2 dictionary badge", async ({ page }) => {
   await page.route("**/analyze", (route) =>
     route.fulfill({ status: 200, contentType: "application/json", headers: CORS, body: JSON.stringify(ANALYSIS) })

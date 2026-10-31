@@ -45,14 +45,18 @@ SPEC T6 said "clarify by existing structure". The portal lives in
 `web/portal/` (`index.html`, `triadic.html`, `triadic.js`); the Review
 screen is added there in the same zero-build style (T6).
 
-## Q7. Decision registry persistence (T4/T5)
+## Q7. Decision registry persistence (T4/T5) — PARTIALLY RESOLVED
 The existing Kafka -> RDF governance pipeline is asynchronous and writes
 only `gfen:` governance provenance via the Validation Result Consumer; it
-has no synchronous per-claim human-review record. T4 therefore needs a
-demo-scope registry (in-memory store + published event, labelled
-simulated/demo in docs) unless the human wants the SPARQL write path
-extended. Default if unanswered: demo-scope store, clearly labelled;
-persistence beyond process lifetime is out of scope for the demo.
+has no synchronous per-claim human-review record. Resolution taken
+2026-10-31 (owner-requested): the demo registry now persists analyses and
+human decisions to an append-only JSONL store when `FEN_STORE_PATH` is
+set (`scripts/start_demo.py` sets `artifacts/store.jsonl`), so a restart
+no longer loses verdicts; decided items are exportable as JSON-LD records
+(`GET /records/{item_id}`) and accepted items are showcased by
+`GET /registry`. Still open / not claimed: writing decisions into the
+Kafka -> SPARQL governance pipeline and any production-grade store — the
+JSONL demo store is the boundary until the human directs otherwise.
 
 ## Q8. Committing live artifacts
 `artifacts/meta/*.json` contain real model responses. SPEC section 0.6:

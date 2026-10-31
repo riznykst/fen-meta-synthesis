@@ -70,6 +70,11 @@ def _already_serving(url: str) -> bool:
 
 def main() -> int:
     load_dotenv()
+    # Persist analyses + human decisions across restarts (JSONL store,
+    # artifacts/ is gitignored). Children inherit this environment.
+    os.environ.setdefault(
+        "FEN_STORE_PATH", str(REPO_ROOT / "artifacts" / "store.jsonl")
+    )
     for port, url in ((8100, "http://127.0.0.1:8100/healthz"),
                       (8082, "http://127.0.0.1:8082/healthz")):
         if _already_serving(url):

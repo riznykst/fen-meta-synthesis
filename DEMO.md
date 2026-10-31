@@ -71,6 +71,15 @@ proposal is a red card with **Accept disabled** (covered by
 3. Scroll to **Decisions in this session**: reviewer, verdict, comment and
    time are listed. Decisions are append-only — deciding again adds a new
    record, the old one stays.
+4. The accepted item also appears under **Registry — where accepted
+   knowledge lands**, with a **Download record (JSON-LD)** export carrying
+   the claim, quote, source, model, prompt hash and your decision. That
+   record is where validated knowledge goes in this demo: the launcher
+   persists analyses and decisions to `artifacts/store.jsonl`, so
+   restarting `scripts/start_demo.py` keeps them (try it: stop, restart,
+   reload — the registry still shows your accepted record). Writing into
+   the Kafka/RDF governance pipeline of the baseline system is
+   deliberately not claimed here.
 
 Try it: typing a quote the source does not contain cannot be accepted —
 the API returns 409 for an accept on an unverified quote (the button is
