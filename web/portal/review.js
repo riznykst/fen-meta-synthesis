@@ -144,6 +144,67 @@
       + esc(source.slice(range.end));
   }
 
+  // Inline source inside the voting card: the source document with the
+  // claim's quote highlighted, collapsible via <details>. The voter sees
+  // the evidence without leaving the card — no scrolling to a separate
+  // section. Pure (testable); "" when the document is unavailable.
+  function sourceInlineHtml(claim, documents) {
+    if (!claim) return "";
+    var doc = null;
+    (documents || []).forEach(function (d) {
+      if (d && d.document_id === claim.document_id) doc = d;
+    });
+    if (!doc || !doc.text) return "";
+    var located = !!findQuoteRange(doc.text, claim.quote);
+    return '<details class="source-inline">'
+      + "<summary>Show in source — document " + esc(claim.document_id)
+      + (doc.title ? ": " + esc(doc.title) : "") + "</summary>"
+      + '<div class="source-text">' + highlightQuoteHtml(doc.text, claim.quote) + "</div>"
+      + '<p class="meta">' + (located
+        ? "The highlighted span is the exact quote this proposal points to."
+        : "The quote could not be located in this document — that is why acceptance is disabled.") + "</p>"
+      + "</details>";
+  }
+
+  // Personal voting list: items the given reviewer has NOT voted on yet.
+  // The voting window is per-reviewer — switching the dropdown shows that
+  // reviewer's own pending work — while the results panel stays global.
+  // Empty reviewer means "no identity yet": everything stays visible.
+  // Pure (testable).
+  function pendingFor(items, decisions, reviewer, idOf) {
+    if (!reviewer) return (items || []).slice();
+    return (items || []).filter(function (it) {
+      var id = idOf(it);
+      return !(decisions || []).some(function (d) {
+        return d.item_id === id && d.reviewer === reviewer;
+      });
+    });
+  }
+
+  // Demo focus: the voting window shows the first MAX_VISIBLE_CLAIMS open
+  // claims by default so a demo stays short; the rest hides behind a
+  // "Show all N" toggle. The constant lives here (before the exports and
+  // the browser-only early return) so Node tests see the real value.
+  var MAX_VISIBLE_CLAIMS = 3;
+
+  function visibleClaims(openClaims, showAll) {
+    if (showAll) return (openClaims || []).slice();
+    return (openClaims || []).slice(0, MAX_VISIBLE_CLAIMS);
+  }
+
+  // Split items into open (still votable) and decided (already voted).
+  // The voting window shows only open items; decided ones move to the
+  // results panel. Pure (testable).
+  function splitDecided(items, decisions, idOf) {
+    var open = [];
+    var decided = [];
+    (items || []).forEach(function (it) {
+      if (itemStatus(idOf(it), decisions) === "proposed") open.push(it);
+      else decided.push(it);
+    });
+    return { open: open, decided: decided };
+  }
+
   function errorMessage(status, detail) {
     if (status === 502) {
       return "The model did not respond or returned an answer that could not be read (error 502). "
@@ -172,7 +233,7 @@
       + '<input class="comment" id="comment-' + esc(itemId) + '" placeholder="Decision comment (optional)" aria-label="Decision comment">';
   }
 
-  function renderClaimCard(claim, decisions) {
+  function renderClaimCard(claim, decisions, documents) {
     var status = itemStatus(claim.claim_id, decisions);
     var verified = canAccept(claim);
     var classes = "item claim" + (verified ? "" : " unverified");
@@ -185,6 +246,7 @@
       + '<span class="meta">Proposal ' + esc(claim.claim_id) + " · document " + esc(claim.document_id) + "</span></div>"
       + '<p class="statement">' + esc(claim.statement || claim.quote) + "</p>"
       + '<blockquote class="quote">' + esc(formatQuote(claim.quote)) + "</blockquote>"
+      + sourceInlineHtml(claim, documents)
       + '<p class="interp"><span class="lbl">Model interpretation (separate from the claim)</span>' + esc(claim.interpretation) + "</p>"
       + '<p class="meta">Uncertainty: ' + esc(claim.uncertainty) + " · provenance: " + esc(claim.provenance_status || "") + "</p>"
       + (amb.length ? '<p class="meta">Ambiguities: ' + amb.map(esc).join("; ") + "</p>" : "")
@@ -199,13 +261,14 @@
       + "</article>";
   }
 
-  function renderContradictionCard(contra, claimsById, decisions) {
+  function renderContradictionCard(contra, claimsById, decisions, documents) {
     var status = itemStatus(contra.contradiction_id, decisions);
     function mini(id) {
       var c = (claimsById || {})[id];
       if (!c) return '<div class="mini missing">Unknown claim ' + esc(id) + "</div>";
       return '<div class="mini"><span class="meta">Claim ' + esc(c.claim_id) + " · " + esc(c.document_id) + "</span>"
         + '<blockquote class="quote">' + esc(formatQuote(c.quote)) + "</blockquote>"
+        + sourceInlineHtml(c, documents)
         + '<p class="interp">' + esc(c.interpretation) + "</p></div>";
     }
     var alts = (contra.alternative_interpretations || []).filter(function (a) { return a && String(a).trim(); });
@@ -307,6 +370,12 @@
     renderConsensusHtml: renderConsensusHtml,
     orderItems: orderItems,
     renderQuoteCheck: renderQuoteCheck,
+    sourceInlineHtml: sourceInlineHtml,
+    splitDecided: splitDecided,
+    pendingFor: pendingFor,
+    visibleClaims: visibleClaims,
+    MAX_VISIBLE_CLAIMS: MAX_VISIBLE_CLAIMS,
+    renderDecidedList: renderDecidedList,
     reviewerOptions: reviewerOptions,
     renderDecisionHistory: renderDecisionHistory,
     findQuoteRange: findQuoteRange,
@@ -326,7 +395,8 @@
   if (typeof document === "undefined") return;
 
   var MOCK = global.fenApiBase ? global.fenApiBase("fen_mock_base", "http://localhost:8100") : "http://localhost:8100";
-  var state = { analysis: null, decisions: [], documents: [] };
+  var state = { analysis: null, decisions: [], documents: [], showAll: false };
+
   function $(id) { return document.getElementById(id); }
 
   async function apiFetch(path, opts) {
@@ -448,6 +518,39 @@
     return html;
   }
 
+  // Decided items as a SHORT list (same visual language as the decision
+  // history): status badge + latest reviewer + item + time, plus compact
+  // vote buttons so a second reviewer can still add their verdict — without
+  // them consensus across reviewers would be impossible once the first
+  // vote moves the card out of the voting window. Pure (testable).
+  function renderDecidedList(decidedClaims, decidedContras, byId, decisions) {
+    var rows = [];
+    (decidedClaims || []).forEach(function (c) {
+      rows.push(decidedRow(c.claim_id, "claim",
+        c.statement || c.quote || c.claim_id, decisions));
+    });
+    (decidedContras || []).forEach(function (x) {
+      var label = x.explanation || ("Contradiction " + x.contradiction_id);
+      rows.push(decidedRow(x.contradiction_id, "contradiction", label, decisions));
+    });
+    if (!rows.length) {
+      return '<p class="note">Nothing decided yet — decided proposals move here from the voting window above.</p>';
+    }
+    return rows.join("");
+  }
+
+  function decidedRow(itemId, itemType, label, decisions) {
+    var latest = null;
+    (decisions || []).forEach(function (d) { if (d.item_id === itemId) latest = d; });
+    var status = itemStatus(itemId, decisions);
+    return '<div class="history-item decided-row" data-item="' + esc(itemId) + '">'
+      + '<span class="badge ' + (STATUS_BADGE[status] || "b-bl") + '">' + esc(statusLabel(status)) + "</span> "
+      + "<b>" + esc((latest && latest.reviewer) || "—") + "</b> · " + esc(itemId)
+      + " — " + esc(String(label).length > 90 ? String(label).slice(0, 89).trimEnd() + "…" : label)
+      + '<span class="meta"> ' + esc((latest && latest.recorded_at) || "") + "</span>"
+      + "</div>";
+  }
+
   function jumpToCard(itemId) {
     var card = document.querySelector('article[data-item="' + itemId + '"]');
     if (!card) return;
@@ -460,18 +563,48 @@
 
   function renderAll() {
     var box = $("proposals");
-    if (!state.analysis) { box.innerHTML = ""; var qc0 = $("quoteCheck"); if (qc0) qc0.innerHTML = ""; updateSteps(); return; }
+    var decidedBox = $("decided");
+    if (!state.analysis) {
+      box.innerHTML = "";
+      var qc0 = $("quoteCheck"); if (qc0) qc0.innerHTML = "";
+      if (decidedBox) decidedBox.innerHTML = "";
+      updateSteps(); return;
+    }
     var claims = state.analysis.analysis.claims || [];
     var contras = state.analysis.analysis.contradictions || [];
     var byId = {};
     claims.forEach(function (c) { byId[c.claim_id] = c; });
+    // Voting window: the SELECTED reviewer's pending items. Globally
+    // decided items live in the results panel (#decided) — each reviewer
+    // sees their own open work on top without scrolling past finished cards.
+    var me = reviewerName();
     var orderedClaims = orderItems(claims, state.decisions, function (c) { return c.claim_id; });
     var orderedContras = orderItems(contras, state.decisions, function (x) { return x.contradiction_id; });
-    box.innerHTML =
-      orderedClaims.map(function (c) { return renderClaimCard(c, state.decisions); }).join("")
-      + orderedContras.map(function (x) { return renderContradictionCard(x, byId, state.decisions); }).join("");
+    var myClaims = pendingFor(orderedClaims, state.decisions, me, function (c) { return c.claim_id; });
+    var myContras = pendingFor(orderedContras, state.decisions, me, function (x) { return x.contradiction_id; });
+    var splitClaims = splitDecided(orderedClaims, state.decisions, function (c) { return c.claim_id; });
+    var splitContras = splitDecided(orderedContras, state.decisions, function (x) { return x.contradiction_id; });
+    if (!myClaims.length && !myContras.length) {
+      box.innerHTML = (!splitClaims.open.length && !splitContras.open.length)
+        ? '<p class="note">All proposals decided — see the results below. Every decision stays recorded with its provenance.</p>'
+        : '<p class="note">Nothing left for ' + esc(me || "this reviewer") + " to vote on — switch reviewer above or see the results below.</p>";
+    } else {
+      var shown = visibleClaims(myClaims, state.showAll);
+      box.innerHTML =
+        shown.map(function (c) { return renderClaimCard(c, state.decisions, state.documents); }).join("")
+        + myContras.map(function (x) { return renderContradictionCard(x, byId, state.decisions, state.documents); }).join("");
+      if (myClaims.length > shown.length) {
+        box.innerHTML += '<button class="decision-btn prov" data-action="toggle-all" type="button" style="width:100%">'
+          + "Show all " + myClaims.length + " proposals (" + shown.length + " shown)</button>";
+      } else if (state.showAll && myClaims.length > MAX_VISIBLE_CLAIMS) {
+        box.innerHTML += '<button class="decision-btn prov" data-action="toggle-all" type="button" style="width:100%">Show fewer</button>';
+      }
+    }
+    if (decidedBox) {
+      decidedBox.innerHTML = renderDecidedList(splitClaims.decided, splitContras.decided, byId, state.decisions);
+    }
     var qc = $("quoteCheck");
-    if (qc) qc.innerHTML = renderQuoteCheck(claims, orderedContras, byId, state.decisions);
+    if (qc) qc.innerHTML = renderQuoteCheck(claims, splitContras.open.concat(splitContras.decided), byId, state.decisions);
     $("history").innerHTML = renderDecisionHistory(state.decisions);
     var pc = state.analysis.provenance_check || {};
     $("analysisMeta").textContent =
@@ -503,6 +636,7 @@
         return { document_id: d.document_id, title: d.title || null, text: d.text || "" };
       });
       state.decisions = votes.decisions || [];
+      state.showAll = false;
       // Show the shared sources in the fields so the joining participant
       // sees exactly what was analysed (Show-in-source needs the texts).
       state.documents.forEach(function (d, i) {
@@ -617,6 +751,7 @@
       state.analysis = result;
       state.documents = docs;
       state.decisions = [];
+      state.showAll = false;
       renderAll();
     } catch (e) {
       $("reviewError").textContent = errorMessage(e.status || 502, e.message);
@@ -735,7 +870,11 @@
     updateSteps();
     syncReviewerChoices(); // voters dropdown works even before any vote
     var reviewerSel = $("reviewer");
-    if (reviewerSel) reviewerSel.addEventListener("change", toggleReviewerNew);
+    if (reviewerSel) reviewerSel.addEventListener("change", function () {
+      toggleReviewerNew();
+      renderAll(); // switching reviewer shows their own pending list
+    });
+
     var refresh = $("refreshThread");
     if (refresh) refresh.addEventListener("click", function () { loadSharedThread(); });
     var reset = $("resetBase");
@@ -766,6 +905,7 @@
       if (btn.dataset.action === "provenance") showProvenance(btn.dataset.item);
       if (btn.dataset.action === "highlight") showInSource(btn.dataset.item);
       if (btn.dataset.action === "jump") jumpToCard(btn.dataset.item);
+      if (btn.dataset.action === "toggle-all") { state.showAll = !state.showAll; renderAll(); }
       if (btn.dataset.action === "export") downloadRecord(btn.dataset.item);
     });
   });

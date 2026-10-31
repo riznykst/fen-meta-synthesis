@@ -27,7 +27,21 @@ test("classic portal loads without JS errors", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test("portal submits a candidate that flips to validated via SSE", async ({ page }) => {
+test("portal submits a candidate that flips to validated via SSE", async ({ page, request }) => {
+  // This path needs the whole pre-hackathon pipeline: the mock delivers the
+  // decision to fen-bridge-webhook (:8101), which publishes to Kafka and the
+  // consumer writes the RDF record. `scripts/start_demo.py` intentionally runs
+  // only the demo API + static layer, so skip (not silently pass) when the
+  // webhook is absent — the CI e2e job runs it against `docker compose up`.
+  let webhookUp = false;
+  try {
+    const probe = await request.get("http://localhost:8101/healthz", { timeout: 2000 });
+    webhookUp = probe.ok();
+  } catch (e) {
+    webhookUp = false;
+  }
+  test.skip(!webhookUp, "requires the full stack (fen-bridge-webhook :8101 + Kafka) — run docker compose up");
+
   const label = "UI e2e entity " + Date.now();
   await page.goto(PORTAL);
   await page.fill("#entity_label", label);

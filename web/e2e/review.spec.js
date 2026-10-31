@@ -102,13 +102,18 @@ test("review flow: proposals, unverified lockout, highlight, human decision", as
   await verified.locator("[data-action='highlight']").click();
   await expect(page.locator("#sourceView mark")).toHaveText("The hill Koshary marks the old trade route");
 
-  // Human decision: only now may the status become accepted.
+  // Human decision: only now may the status become accepted. The decided
+  // card leaves the voting window and moves to the results as a short row.
   await verified.locator("[data-verdict='accept']").click();
-  await expect(verified).toContainText("Accepted by a human reviewer", { timeout: 10000 });
+  await expect(page.locator("#proposals article[data-item='c1']")).toHaveCount(0, { timeout: 10000 });
+  const decided = page.locator('#decided [data-item="c1"]');
+  await expect(decided).toContainText("Accepted by a human reviewer");
+  await expect(decided.locator("button")).toHaveCount(0);
   await expect(page.locator("#history")).toContainText("reviewer-1");
 
-  // Provenance chain renders model + prompt hash + decision.
-  await verified.locator("[data-action='provenance']").click();
+  // Provenance chain renders model + prompt hash + decision (checked from
+  // a still-open card; decided rows are button-free by design).
+  await unverified.locator("[data-action='provenance']").click();
   await expect(page.locator("#provenance")).toContainText("sha256:e2e");
   await expect(page.locator("#provenance")).toContainText("muse-spark-1.3");
 });

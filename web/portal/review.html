@@ -12,9 +12,12 @@
   header .sub { font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:#6b6560; }
   header .switch { display:inline-block; margin-top:10px; font-size:11px; color:#2d5a8e; border:1px solid #2d5a8e55; border-radius:999px; padding:4px 12px; text-decoration:none; background:#fff; }
   .mainnav { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin:12px 0 4px; }
-  .mainnav a { display:inline-flex; align-items:center; min-height:28px; padding:4px 12px; font-size:11px; color:#2d5a8e; border:1px solid #2d5a8e55; border-radius:999px; text-decoration:none; background:#fff; }
+  .mainnav a { display:inline-flex; align-items:center; min-height:28px; padding:5px 12px; font-size:11px; color:#2d5a8e; border:1px solid #2d5a8e55; border-radius:999px; text-decoration:none; background:#fff; }
   .mainnav a:hover { background:#e8eff7; }
   .mainnav a[aria-current="page"] { background:#2d5a8e; border-color:#2d5a8e; color:#fff; font-weight:700; }
+  .baseline-footer { text-align:center; font-size:11px; color:#6b6560; padding:12px 0 24px; }
+  .baseline-footer a { color:#2d5a8e; }
+  .baseline-footer a[aria-current="page"] { font-weight:700; }
   .banner { background:#faf3e0; border:1px dashed #c9a35f; border-radius:8px; padding:8px 12px; font-size:12px; color:#5c4a10; text-align:center; margin-bottom:16px; }
   .panel { background:#fdfcfa; border:1.5px solid #2d5a8e; border-radius:18px; padding:20px 18px; margin-bottom:18px; }
   .panel h2 { font-family:Georgia,serif; font-size:20px; font-weight:400; margin:0 0 4px; }
@@ -32,6 +35,9 @@
   .btn.secondary { background:#fff; color:#2d5a8e; border:1.5px solid #2d5a8e; margin-top:10px; }
   mark { background:#ffe58a; padding:0 2px; border-radius:2px; }
   .source-text { white-space:pre-wrap; font-size:12.5px; line-height:1.6; background:#fff; border:1px solid #e3ded2; border-radius:8px; padding:10px 12px; }
+  .source-inline { margin:8px 0; font-size:12px; }
+  .source-inline summary { cursor:pointer; font-weight:700; color:#2d5a8e; }
+  .source-inline .source-text { margin-top:6px; max-height:220px; overflow:auto; }
   .badge { display:inline-block; padding:3px 9px; border-radius:999px; font-size:10.5px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; }
   .b-gr { color:#1f6e4e; background:#e2f3ea; } .b-rd { color:#a02a2a; background:#fbe4e4; } .b-gd { color:#8b6914; background:#faf1dc; } .b-bl { color:#2d5a8e; background:#e8eff7; }
   .item { border:1px solid #e6e1d7; border-radius:12px; padding:14px; background:#fff; margin-bottom:14px; box-shadow:0 1px 3px rgba(28,27,31,.07); transition:box-shadow .15s ease, transform .15s ease; }
@@ -56,6 +62,7 @@
   .contra-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px; }
   .mini { border:1px solid #e3ded2; border-radius:8px; padding:8px; background:#fdfcfa; }
   .history-item { font-size:12px; padding:6px 0; border-bottom:1px solid #e3ded2; }
+
   .consensus { margin-top:9px; padding:8px 10px; border:1.5px dashed #2d5a8e66; border-radius:8px; background:#f4f8fc; font-size:11.5px; }
   .consensus .lbl { margin:0 0 5px; }
   .reviewer-chips .badge { margin:2px 2px 0 0; }
@@ -79,11 +86,10 @@
   <header>
     <h1>Review — Human-Governed AI Synthesis</h1>
     <div class="sub">Model proposes · human decides · record remembers</div>
-    <nav class="mainnav" aria-label="Main navigation">
+        <nav class="mainnav" aria-label="Main navigation">
       <a href="/web/portal/demo.html" title="Simplified one-screen demo">Demo</a>
       <a href="/web/portal/review.html" aria-current="page" title="Full Review screen">Review</a>
-      <a href="/web/portal/index.html" title="Candidates &amp; community voting">Candidates</a>
-      <a href="/web/portal/triadic.html" title="Triadic view (Scaffold → Consensus → Registry)">Triadic</a>
+      <a href="/web/portal/registry.html" title="Public registry — accepted knowledge from Supabase">Registry</a>
       <a href="/web/portal/faq.html" title="User Wiki &amp; FAQ — what every button means">Wiki &amp; FAQ</a>
     </nav>
   </header>
@@ -135,11 +141,16 @@
     <div id="provenance"><p class="note">Select “Provenance” on a proposal to see document → quote → model proposal → decisions.</p></div>
     <h3 style="font-family:Georgia,serif;font-weight:400">Decisions in this session</h3>
     <div id="history"><p class="note">No human decisions yet — every item above is still a proposal.</p></div>
+    <h3 style="font-family:Georgia,serif;font-weight:400">Decided proposals</h3>
+    <div id="decided"><p class="note">Nothing decided yet — decided proposals move here from the voting window above.</p></div>
   </section>
 </div>
 <script src="/web/shared/escape.js?v=2"></script>
 <script src="/web/shared/api-base.js?v=2"></script>
 <script src="/web/shared/theme.js?v=2"></script>
-<script src="/web/portal/review.js?v=5"></script>
+<script src="/web/portal/review.js?v=11"></script>
+  <footer class="baseline-footer">
+    Pre-hackathon baseline: <a href="/web/portal/index.html">Candidates &amp; community voting</a> · <a href="/web/portal/triadic.html">Triadic view</a>
+  </footer>
 </body>
 </html>

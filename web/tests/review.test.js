@@ -197,6 +197,59 @@ test("reviewerOptions: voters first, then free default names, no duplicates", ()
   );
 });
 
+test("sourceInlineHtml: source with highlighted quote inside the card", () => {
+  const docs = [{ document_id: "d1", title: "Local oral tradition", text: "Before. The hill marks the old route. After." }];
+  const html = R.sourceInlineHtml(
+    { claim_id: "c1", document_id: "d1", quote: "The hill marks the old route" }, docs);
+  assert.match(html, /<details class="source-inline">/);
+  assert.match(html, /document d1/);
+  assert.match(html, /<mark>The hill marks the old route<\/mark>/);
+  assert.strictEqual(R.sourceInlineHtml({ claim_id: "c1", document_id: "ghost", quote: "x" }, docs), "");
+  assert.strictEqual(R.sourceInlineHtml({ claim_id: "c1", document_id: "d1", quote: "x" }, []), "");
+});
+
+test("splitDecided: open stays votable, decided moves to results", () => {
+  const items = [{ claim_id: "c1" }, { claim_id: "c2" }];
+  const split = R.splitDecided(items, [{ item_id: "c2", status: "accepted" }], (c) => c.claim_id);
+  assert.deepStrictEqual(split.open.map((c) => c.claim_id), ["c1"]);
+  assert.deepStrictEqual(split.decided.map((c) => c.claim_id), ["c2"]);
+});
+
+test("renderDecidedList: short rows only, no buttons at all", () => {
+  const decisions = [
+    { item_id: "c1", verdict: "accept", status: "accepted", reviewer: "ana", comment: "", recorded_at: "2026-10-31T15:52:50Z" },
+  ];
+  const html = R.renderDecidedList([VERIFIED], [], {}, decisions);
+  assert.match(html, /Accepted by a human reviewer/);
+  assert.match(html, /ana/);
+  assert.match(html, /c1/);
+  assert.ok(!html.includes("<article"), "decided list must not render full cards");
+  assert.ok(!html.includes("<button"), "decided list must not render any buttons");
+  assert.ok(!html.includes("data-verdict"), "decided list must not carry vote buttons");
+  const empty = R.renderDecidedList([], [], {}, []);
+  assert.match(empty, /Nothing decided yet/);
+});
+
+test("pendingFor: reviewer sees only items they have not voted on", () => {
+  const items = [{ claim_id: "c1" }, { claim_id: "c2" }, { claim_id: "c3" }];
+  const decisions = [
+    { item_id: "c1", reviewer: "ana", status: "accepted" },
+    { item_id: "c2", reviewer: "boris", status: "rejected" },
+  ];
+  const idOf = (c) => c.claim_id;
+  assert.deepStrictEqual(R.pendingFor(items, decisions, "ana", idOf).map(idOf), ["c2", "c3"]);
+  assert.deepStrictEqual(R.pendingFor(items, decisions, "boris", idOf).map(idOf), ["c1", "c3"]);
+  assert.deepStrictEqual(R.pendingFor(items, decisions, "", idOf).map(idOf), ["c1", "c2", "c3"]);
+});
+
+test("visibleClaims: first 3 by default, all when expanded", () => {
+  const open = [{ claim_id: "c1" }, { claim_id: "c2" }, { claim_id: "c3" }, { claim_id: "c4" }];
+  assert.deepStrictEqual(R.visibleClaims(open, false).map((c) => c.claim_id), ["c1", "c2", "c3"]);
+  assert.deepStrictEqual(R.visibleClaims(open, true).map((c) => c.claim_id), ["c1", "c2", "c3", "c4"]);
+  assert.deepStrictEqual(R.visibleClaims([{ claim_id: "c1" }], false).map((c) => c.claim_id), ["c1"]);
+  assert.strictEqual(R.MAX_VISIBLE_CLAIMS, 3);
+});
+
 test("errorMessage: 502 is understandable and non-technical first", () => {
   const msg = R.errorMessage(502);
   assert.match(msg, /model did not respond/i);

@@ -15,6 +15,9 @@
   .mainnav a { display:inline-flex; align-items:center; min-height:28px; padding:5px 12px; font-size:11px; color:#2d5a8e; border:1px solid #2d5a8e55; border-radius:999px; text-decoration:none; background:#fff; }
   .mainnav a:hover { background:#e8eff7; }
   .mainnav a[aria-current="page"] { background:#2d5a8e; border-color:#2d5a8e; color:#fff; font-weight:700; }
+  .baseline-footer { text-align:center; font-size:11px; color:#6b6560; padding:12px 0 24px; }
+  .baseline-footer a { color:#2d5a8e; }
+  .baseline-footer a[aria-current="page"] { font-weight:700; }
   .panel { background:#fdfcfa; border:1.5px solid #2d5a8e; border-radius:16px; padding:20px 18px; margin-bottom:16px; }
   .panel h2 { font-family:Georgia,serif; font-size:20px; font-weight:400; margin:0 0 8px; }
   .panel h3 { font-family:Georgia,serif; font-weight:400; margin:16px 0 6px; }
@@ -37,11 +40,10 @@
   <header>
     <h1>User Wiki &amp; FAQ</h1>
     <div class="sub">FEN × Meta · AI proposes · humans decide · every decision keeps its provenance</div>
-    <nav class="mainnav" aria-label="Main navigation">
+        <nav class="mainnav" aria-label="Main navigation">
       <a href="/web/portal/demo.html" title="Simplified one-screen demo">Demo</a>
       <a href="/web/portal/review.html" title="Full Review screen">Review</a>
-      <a href="/web/portal/index.html" title="Candidates &amp; community voting">Candidates</a>
-      <a href="/web/portal/triadic.html" title="Triadic view (Scaffold → Consensus → Registry)">Triadic</a>
+      <a href="/web/portal/registry.html" title="Public registry — accepted knowledge from Supabase">Registry</a>
       <a href="/web/portal/faq.html" aria-current="page" title="User Wiki &amp; FAQ — what every button means">Wiki &amp; FAQ</a>
     </nav>
   </header>
@@ -445,5 +447,8 @@
     proposes. <code>accepted</code> exists only after a recorded human decision.</p>
   </section>
 </div>
+  <footer class="baseline-footer">
+    Pre-hackathon baseline: <a href="/web/portal/index.html">Candidates &amp; community voting</a> · <a href="/web/portal/triadic.html">Triadic view</a>
+  </footer>
 </body>
 </html>
