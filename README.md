@@ -65,6 +65,90 @@ documents ──► Meta model ──► structured analysis ──► determini
 The model never sets a final status. `accepted`, `rejected`, and `disputed`
 exist only after a human decision.
 
+## Implementation map — demo, repository, development setup
+
+The diagram shows what actually runs in the demo today. Solid paths are
+implemented and tested; the dashed path is the pre-existing baseline
+pipeline, which is **not** wired into the hackathon decisions yet.
+
+```mermaid
+flowchart LR
+    subgraph IN["1 · Input"]
+        DOC["Source documents<br/>paste · upload (.txt/.md/.json) ·<br/>synthetic or ePSD2 datasets"]
+    end
+    subgraph DEMO["Demo (this repository)"]
+        UI["Simplified demo UI<br/>web/portal/demo.html"]
+        API["Demo API · FastAPI :8100<br/>mock_fen_api/main.py"]
+        SVC["Analysis service<br/>services/common/analyze.py"]
+        CONTRACT["Structured contract<br/>services/common/analysis.py<br/>schemas/analysis/"]
+        CHECK["Deterministic checks<br/>parse_analysis · verify_provenance"]
+        STORE[("Registry store<br/>JSONL · artifacts/store.jsonl<br/>(when launched via start_demo.py)")]
+        EXP["Record export<br/>GET /records/{id} · JSON-LD"]
+        REG["Registry showcase<br/>accepted knowledge in the UI"]
+    end
+    META["Meta Model API<br/>muse-spark-1.3<br/>services/common/llm.py"]
+    HUMAN{"Human reviewer<br/>accept · reject · dispute"}
+    BASE["Baseline FEN pipeline<br/>Kafka → Fuseki/RDF → PID → portal<br/>(pre-hackathon, separate)"]
+
+    DOC --> UI
+    UI -->|"POST /analyze"| API --> SVC
+    SVC -->|"chat completions<br/>JSON-schema output"| META --> SVC
+    SVC --> CONTRACT --> CHECK
+    CHECK -->|"proposals: claims,<br/>quotes, contradictions"| UI
+    UI --> HUMAN
+    HUMAN -->|"POST /decisions<br/>(409: unverified quote<br/>cannot be accepted)"| API
+    API --> STORE
+    STORE --> REG --> UI
+    STORE --> EXP
+    STORE -->|"GET /provenance/{id}"| UI
+    EXP -.->|"future ingestion<br/>(not wired yet)"| BASE
+```
+
+| Part | Where it lives | Status |
+|---|---|---|
+| Simplified one-screen demo (sources → proposals → decision → registry) | [web/portal/demo.html](web/portal/demo.html), [demo.js](web/portal/demo.js) | Done |
+| Full Review screen (same workflow, all panels) | [web/portal/review.html](web/portal/review.html), [review.js](web/portal/review.js) | Done |
+| Candidate detail page for voters | [web/portal/candidate.html](web/portal/candidate.html) | Done |
+| Analysis workflow (prompt → parse → provenance) | [services/common/analyze.py](services/common/analyze.py), [services/common/analysis.py](services/common/analysis.py) | Done |
+| Meta client (retries, JSON mode, structured output, usage capture) | [services/common/llm.py](services/common/llm.py), [docs/PROVIDERS.md](docs/PROVIDERS.md) | Done |
+| Demo API (`/analyze`, `/decisions`, `/provenance`, `/registry`, `/records`) | [mock_fen_api/main.py](mock_fen_api/main.py), [decisions.py](mock_fen_api/decisions.py), [store.py](mock_fen_api/store.py) | Done |
+| Decision persistence across restarts (JSONL append-only) | `artifacts/store.jsonl` via `FEN_STORE_PATH` ([scripts/start_demo.py](scripts/start_demo.py)) | Done (demo scope) |
+| Evaluation harness (metrics, B0 baseline, provider comparison) | [eval/run_eval.py](eval/run_eval.py), [eval/REPORT.md](eval/REPORT.md) | Done; corpus runs Planned |
+| Lemma candidates checked against ePSD2 | [eval/candidates/](eval/candidates/sumerian-video-candidates.json), [eval/dataset/SOURCES.md](eval/dataset/SOURCES.md) | Done; gold dataset Planned |
+| Baseline Kafka → RDF → PID pipeline | `services/fen_bridge/`, `services/validation_consumer/`, `services/status_api/` | Done (baseline); integration with decisions Planned |
+| DAO / Quadratic Voting, ledger anchors | `mock_fen_api/` | Simulated |
+
+### Development setup
+
+```bash
+git clone https://github.com/riznykst/fen-meta-synthesis
+cd fen-meta-synthesis
+
+# Demo (no Docker): configure Meta once, then one command
+cp .env.example .env        # set FEN_LLM_BASE_URL / FEN_LLM_API_KEY / FEN_LLM_MODEL
+python scripts/start_demo.py
+# open http://127.0.0.1:8082/web/portal/demo.html
+
+# Tests
+pip install -r requirements-common.txt
+python -m pytest -q                 # 199 tests
+node --test web/tests/*.test.js     # UI pure-function tests
+# from web/: npx playwright test    # browser e2e (needs the local stack)
+
+# Evaluation
+python eval/validate_dataset.py
+python eval/run_eval.py --provider meta     # needs a labelled dataset
+python eval/run_eval.py --provider fixture  # offline SYNTHETIC smoke
+
+# Full pre-hackathon stack (Kafka, Fuseki, all baseline services)
+docker compose up
+```
+
+Deployment: the static web layer is deployed by Vercel from this
+repository (`vercel.json` rewrites; live demo at
+https://fen-meta-synthesis.vercel.app/demo). The Python backend runs
+locally for the demo; no public backend is claimed.
+
 ## What is new in this hackathon
 
 | Area | Contribution |
