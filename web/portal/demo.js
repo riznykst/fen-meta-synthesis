@@ -131,16 +131,32 @@
     });
   }
 
+  var STATUS_BADGE_REG = { accepted: "b-gr", rejected: "b-rd", disputed: "b-gd", proposed: "b-bl" };
+
   function renderRegistryHtml(records, exportBase) {
     if (!records || !records.length) {
       return '<p class="note">Registry is empty — accepted proposals will appear here with their record.</p>';
     }
     return records.map(function (r) {
+      var votes = Array.isArray(r.votes) ? r.votes : [];
+      var voters = r.voter_count != null ? r.voter_count : (function (v) {
+        var seen = {}; v.forEach(function (x) { if (x.reviewer) seen[x.reviewer] = true; }); return Object.keys(seen).length;
+      })(votes);
+      var voteRows = votes.map(function (v) {
+        return '<li><span class="badge ' + (STATUS_BADGE_REG[v.status] || "b-bl") + '">' + escHtml(v.status || v.verdict) + "</span> "
+          + "<b>" + escHtml(v.reviewer) + "</b>"
+          + (v.comment ? " — " + escHtml(v.comment) : "")
+          + '<span class="meta"> ' + escHtml(v.recorded_at || "") + "</span></li>";
+      }).join("");
       return '<div class="registry-item"><span class="badge b-gr">Accepted knowledge</span> '
         + "<b>" + escHtml(r.statement || r.item_id) + "</b>"
-        + '<div class="meta">decided by ' + escHtml(r.reviewer) + " · " + escHtml(r.recorded_at)
+        + '<div class="meta">decided by <b>' + voters + " reviewer" + (voters === 1 ? "" : "s") + "</b>"
+        + " · " + escHtml(r.recorded_at)
         + " · document " + escHtml(r.document_id) + "</div>"
         + (r.quote ? '<blockquote class="quote">' + escHtml(r.quote) + "</blockquote>" : "")
+        + (votes.length
+          ? '<details class="vote-trail"><summary>Who voted (' + votes.length + " vote" + (votes.length === 1 ? "" : "s") + ")</summary><ul class=\"vote-list\">" + voteRows + "</ul></details>"
+          : "")
         + '<a class="exp" href="' + escHtml((exportBase || "") + r.export_path)
         + '" download>Download record (JSON-LD)</a></div>';
     }).join("");

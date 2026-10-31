@@ -45,8 +45,20 @@
   .contra-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px; }
   .mini { border:1px solid #e3ded2; border-radius:8px; padding:8px; background:#fdfcfa; }
   .history-item { font-size:12px; padding:6px 0; border-bottom:1px solid #e3ded2; }
+  .consensus { margin-top:9px; padding:8px 10px; border:1.5px dashed #2d5a8e66; border-radius:8px; background:#f4f8fc; font-size:11.5px; }
+  .consensus .lbl { margin:0 0 5px; }
+  .reviewer-chips .badge { margin:2px 2px 0 0; }
+  .shared-thread { display:flex; flex-wrap:wrap; gap:8px; align-items:center; font-size:12px; background:#eef4fb; border:1px solid #2d5a8e44; border-radius:8px; padding:8px 10px; margin-bottom:12px; }
+  .panel > h2 { cursor:pointer; }
+  .panel > h2::after { content:" ▾"; color:#2d5a8e; font-size:13px; }
+  .panel.collapsed > h2::after { content:" ▸"; }
+  .panel.collapsed > *:not(h2) { display:none !important; }
   .registry-item { border:1px solid #2e7d5b66; background:#f4faf6; border-radius:10px; padding:10px 12px; margin-bottom:10px; font-size:12.5px; }
   .registry-item a.exp { color:#2e7d5b; font-weight:700; font-size:11.5px; }
+  .vote-trail { margin-top:8px; font-size:12px; }
+  .vote-trail summary { cursor:pointer; font-weight:700; color:#2d5a8e; }
+  .vote-list { list-style:none; margin:6px 0 0; padding:0 0 0 4px; }
+  .vote-list li { padding:3px 0; border-bottom:1px dashed #e3ded2; }
   .note { font-size:11.5px; color:#6b6560; text-align:center; padding:14px 8px; }
   .error { color:#b23a3a; font-size:12.5px; line-height:1.5; margin-top:10px; }
   .state { font-size:12px; color:#2d5a8e; margin-top:8px; min-height:16px; }
@@ -85,8 +97,9 @@
       <div class="meta" style="margin-top:7px">…or drag &amp; drop .txt / .md / .json files here (up to 3 documents, 30 000 characters total). Files are read in your browser and sent to the model only when you click Analyse.</div>
       <div class="meta" id="uploadNote" role="status"></div>
     </div>
-    <label class="lbl" for="reviewer">Reviewer name (recorded with every decision)</label>
-    <input id="reviewer" value="reviewer-1">
+    <label class="lbl" for="reviewer">Reviewer name (recorded with every decision — pick a voter or type a new name)</label>
+    <input id="reviewer" value="reviewer-1" list="reviewerList" autocomplete="off">
+    <datalist id="reviewerList"></datalist>
     <label class="lbl" for="doc1Title">Document 1 title</label>
     <input id="doc1Title" value="Local oral tradition">
     <label class="lbl" for="doc1">Document 1 text</label>
@@ -110,6 +123,7 @@
 
   <section class="panel" aria-label="Proposals">
     <h2>2–3 · Model proposals &amp; quote check</h2>
+    <div id="sharedThread" class="shared-thread"><span id="sharedThreadText">Shared thread: checking the server for an existing analysis…</span> <button class="decision-btn prov" id="refreshThread" type="button" style="flex:0 1 auto;min-height:36px;padding:6px 14px">↻ Refresh</button> <button class="decision-btn prov" id="resetBase" type="button" style="flex:0 1 auto;min-height:36px;padding:6px 14px">Reset API to localhost:8100</button></div>
     <div id="proposals"><p class="note">No proposals yet — analyse documents first. Every item stays a proposal until you decide.</p></div>
   </section>
 
@@ -130,10 +144,10 @@
     <a href="/web/portal/index.html">Classic candidates</a>
   </footer>
 </div>
-<script src="/web/shared/escape.js"></script>
-<script src="/web/shared/api-base.js"></script>
-<script src="/web/shared/theme.js"></script>
-<script src="/web/portal/review.js"></script>
-<script src="/web/portal/demo.js"></script>
+<script src="/web/shared/escape.js?v=2"></script>
+<script src="/web/shared/api-base.js?v=2"></script>
+<script src="/web/shared/theme.js?v=2"></script>
+<script src="/web/portal/review.js?v=2"></script>
+<script src="/web/portal/demo.js?v=2"></script>
 </body>
 </html>

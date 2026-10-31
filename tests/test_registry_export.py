@@ -130,6 +130,22 @@ def test_accepted_records_pure_function():
     assert len(out) == 1 and out[0]["quote"] == "q1 text"
 
 
+def test_registry_vote_trail_counts_distinct_voters():
+    client = TestClient(mock_main.app)
+    for reviewer in ("ana", "boris", "ana"):
+        resp = client.post(
+            "/decisions",
+            json={"analysis_id": "an_test1", "item_id": "c1", "item_type": "claim",
+                  "verdict": "accept", "comment": "", "reviewer": reviewer},
+        )
+        assert resp.status_code == 201
+    record = client.get("/registry").json()["records"][0]
+    assert record["voter_count"] == 2  # ana counted once
+    assert [(v["reviewer"], v["verdict"]) for v in record["votes"]] == [
+        ("ana", "accept"), ("boris", "accept"), ("ana", "accept"),
+    ]
+
+
 # ----------------------------------------------------------------- export ---
 def test_record_export_jsonld_for_accepted_item():
     client = TestClient(mock_main.app)

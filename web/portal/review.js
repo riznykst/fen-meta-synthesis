@@ -40,6 +40,53 @@
     return status;
   }
 
+  // Community consensus over recorded human decisions: each distinct
+  // reviewer contributes their LATEST verdict on the item (repeat votes
+  // update, never double-count). Consensus needs at least two distinct
+  // reviewers and a strict majority for one verdict — a single reviewer
+  // is a decision, not a consensus. This aggregates only recorded human
+  // decisions; the model never appears here.
+  function consensusFor(itemId, decisions) {
+    var latestByReviewer = {};
+    var order = [];
+    (decisions || []).forEach(function (d) {
+      if (d.item_id !== itemId) return;
+      var reviewer = d.reviewer || "reviewer";
+      var status = d.status || VERDICT_STATUS[d.verdict];
+      if (!status) return;
+      if (!(reviewer in latestByReviewer)) order.push(reviewer);
+      latestByReviewer[reviewer] = status;
+    });
+    var reviewers = order.map(function (name) {
+      return { reviewer: name, status: latestByReviewer[name] };
+    });
+    var counts = { accepted: 0, rejected: 0, disputed: 0 };
+    reviewers.forEach(function (r) { if (r.status in counts) counts[r.status] += 1; });
+    var total = reviewers.length;
+    var verdict = null;
+    ["accepted", "rejected", "disputed"].forEach(function (s) {
+      if (total >= 2 && counts[s] * 2 > total) verdict = s;
+    });
+    var label;
+    if (total === 0) label = "No reviewer votes yet";
+    else if (verdict) label = "Community consensus: " + verdict + " (" + counts[verdict] + " of " + total + " reviewers)";
+    else if (total === 1) label = "1 reviewer voted — awaiting more reviewers for consensus";
+    else label = "No consensus yet — reviewers are split (" + total + " voted)";
+    return { total: total, counts: counts, reviewers: reviewers, verdict: verdict, label: label };
+  }
+
+  function renderConsensusHtml(itemId, decisions) {
+    var c = consensusFor(itemId, decisions);
+    var chips = c.reviewers.map(function (r) {
+      return '<span class="badge ' + (STATUS_BADGE[r.status] || "b-bl") + '">' + esc(r.reviewer) + ": " + esc(r.status) + "</span>";
+    }).join(" ");
+    var head = c.verdict
+      ? '<span class="badge ' + (STATUS_BADGE[c.verdict] || "b-bl") + '">' + esc(c.label) + "</span>"
+      : '<span class="badge b-gd">' + esc(c.label) + "</span>";
+    return '<div class="consensus"><div class="lbl">Community consensus (distinct reviewers, latest vote each)</div>'
+      + head + (chips ? ' <span class="reviewer-chips">' + chips + "</span>" : "") + "</div>";
+  }
+
   function canAccept(item) {
     if (!item) return false;
     if (typeof item.quote_verified === "boolean") return item.quote_verified;
@@ -142,6 +189,7 @@
       + '<p class="meta">Uncertainty: ' + esc(claim.uncertainty) + " · provenance: " + esc(claim.provenance_status || "") + "</p>"
       + (amb.length ? '<p class="meta">Ambiguities: ' + amb.map(esc).join("; ") + "</p>" : "")
       + quoteNote
+      + renderConsensusHtml(claim.claim_id, decisions)
       + dictionaryBadgeHtml(claim)
       + (status === "accepted"
         ? '<div class="decision-row"><button class="decision-btn prov" data-action="export" data-item="' + esc(claim.claim_id) + '">Download record (JSON-LD)</button></div>'
@@ -170,6 +218,7 @@
       + (alts.length
         ? '<p class="meta">Alternative interpretations: ' + alts.map(esc).join("; ") + "</p>"
         : "")
+      + renderConsensusHtml(contra.contradiction_id, decisions)
       + decisionButtons(contra.contradiction_id, "contradiction", contra)
       + "</article>";
   }
@@ -253,6 +302,8 @@
     errorMessage: errorMessage,
     renderClaimCard: renderClaimCard,
     renderContradictionCard: renderContradictionCard,
+    consensusFor: consensusFor,
+    renderConsensusHtml: renderConsensusHtml,
     renderDecisionHistory: renderDecisionHistory,
     findQuoteRange: findQuoteRange,
     highlightQuoteHtml: highlightQuoteHtml,
@@ -315,6 +366,82 @@
       " · all items are proposals until you decide";
   }
 
+  // Shared thread: analyses and decisions live on the server, so a second
+  // participant opening this screen in another tab joins the SAME thread
+  // (proposals + votes) instead of an empty screen. Loads the newest
+  // analysis on page open; the Refresh button re-syncs votes.
+  async function loadSharedThread() {
+    var note = $("sharedThreadText");
+    try {
+      var list = await apiFetch("/analyses");
+      var items = list.analyses || [];
+      if (!items.length) {
+        if (note) note.textContent = "Shared thread (" + MOCK + "): no analysis on the server yet — analyse documents to start one.";
+        return false;
+      }
+      var latest = items[0];
+      var body = await apiFetch("/analyses/" + encodeURIComponent(latest.analysis_id));
+      var votes = await apiFetch("/decisions?analysis_id=" + encodeURIComponent(latest.analysis_id));
+      state.analysis = body;
+      state.documents = (body.documents || []).map(function (d) {
+        return { document_id: d.document_id, title: d.title || null, text: d.text || "" };
+      });
+      state.decisions = votes.decisions || [];
+      // Show the shared sources in the fields so the joining participant
+      // sees exactly what was analysed (Show-in-source needs the texts).
+      state.documents.forEach(function (d, i) {
+        var n = i + 1;
+        if ($("doc" + n)) $("doc" + n).value = d.text;
+        if ($("doc" + n + "Title")) $("doc" + n + "Title").value = d.title || "";
+        if (n === 3 && $("doc3Block")) { $("doc3Block").style.display = "block"; var a = $("addDocBtn"); if (a) a.style.display = "none"; }
+      });
+      syncReviewerChoices();
+      renderAll();
+      if (note) {
+        note.textContent = "Shared thread (" + MOCK + "): joined analysis " + latest.analysis_id
+          + " — " + state.decisions.length + " recorded vote(s). Other participants see the same thread; set your reviewer name and vote.";
+      }
+      return true;
+    } catch (e) {
+      if (note) note.textContent = "Shared thread (" + MOCK + "): could not load — " + (e.message || e) + ". If this is wrong, clear the saved API base or open with ?fen_mock_base=http://localhost:8100";
+      return false;
+    }
+  }
+
+  async function refreshVotesOnly() {
+    if (!state.analysis) return;
+    try {
+      var votes = await apiFetch("/decisions?analysis_id=" + encodeURIComponent(state.analysis.analysis_id));
+      var fresh = votes.decisions || [];
+      if (fresh.length !== state.decisions.length) {
+        state.decisions = fresh;
+        renderAll();
+      }
+    } catch (e) { /* server blip: keep current view */ }
+  }
+
+  // Participant identities (demo-scope): a datalist of every reviewer who
+  // has voted, so a second participant can pick an existing name or type a
+  // new one. Identity is a free-text name recorded with each decision — a
+  // demo stand-in, not a verified account (ADR-005 production identity is
+  // out of scope).
+  function syncReviewerChoices() {
+    var list = $("reviewerList");
+    if (!list) return;
+    var names = {};
+    (state.decisions || []).forEach(function (d) { if (d.reviewer) names[d.reviewer] = true; });
+    list.innerHTML = Object.keys(names).map(function (n) {
+      return '<option value="' + esc(n) + '"></option>';
+    }).join("");
+  }
+
+  function initCollapsiblePanels() {
+    document.querySelectorAll(".panel > h2").forEach(function (h) {
+      h.title = "Collapse / expand this panel";
+      h.addEventListener("click", function () { h.parentElement.classList.toggle("collapsed"); });
+    });
+  }
+
   async function runAnalyze() {
     var docs = [];
     [1, 2, 3].forEach(function (n) {
@@ -365,6 +492,7 @@
         reviewer: ($("reviewer").value.trim() || "reviewer-1"),
         comment: commentEl ? commentEl.value.trim() : "",
       });
+      syncReviewerChoices();
       $("reviewError").textContent = "";
       renderAll();
     } catch (e) {
@@ -435,6 +563,22 @@
   document.addEventListener("DOMContentLoaded", function () {
     if (!$("analyzeBtn")) return;
     $("analyzeBtn").addEventListener("click", runAnalyze);
+    initCollapsiblePanels();
+    var refresh = $("refreshThread");
+    if (refresh) refresh.addEventListener("click", function () { loadSharedThread(); });
+    var reset = $("resetBase");
+    if (reset) reset.addEventListener("click", function () {
+      try { localStorage.removeItem("fen_mock_base"); } catch (e) { /* ignore */ }
+      var u = new URL(window.location.href);
+      u.searchParams.delete("fen_mock_base");
+      window.location.href = u.toString();
+    });
+    // Join the shared thread (if any) so additional participants/tabs see
+    // the same proposals and votes instead of an empty screen.
+    loadSharedThread();
+    // Keep votes in sync across tabs/participants (decisions only; the
+    // document fields the user may be editing are never touched here).
+    setInterval(refreshVotesOnly, 8000);
     var addDoc = $("addDocBtn");
     if (addDoc) {
       addDoc.addEventListener("click", function () {

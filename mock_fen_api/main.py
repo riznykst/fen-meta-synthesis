@@ -666,6 +666,57 @@ def analyze(payload: AnalyzeBody):
     return result
 
 
+@app.get("/analyses")
+def list_analyses():
+    """Shared thread for multi-reviewer work: every analysis run on this
+    server (newest first), so a second participant opening the Review or
+    Demo screen in another tab can join the SAME proposals instead of
+    starting from an empty screen. Summaries only; full bodies via
+    GET /analyses/{analysis_id}."""
+    with _state_lock:
+        stored = list(_analyses.values())
+    out = []
+    for result in reversed(stored):
+        pc = result.get("provenance_check") or {}
+        out.append({
+            "analysis_id": result.get("analysis_id"),
+            "created_at": result.get("created_at"),
+            "status": result.get("status"),
+            "model": result.get("model"),
+            "claims_total": pc.get("claims_total"),
+            "documents": [
+                {"document_id": d.get("document_id"), "title": d.get("title")}
+                for d in result.get("_documents", [])
+            ],
+        })
+    return {"analyses": out, "count": len(out)}
+
+
+@app.get("/analyses/{analysis_id}")
+def get_analysis(analysis_id: str):
+    """One stored analysis in the response shape of POST /analyze, plus
+    its source ``documents`` (needed by a joining participant for
+    Show-in-source). 404 for an unknown id."""
+    with _state_lock:
+        stored = _analyses.get(analysis_id)
+        if stored is None:
+            raise HTTPException(status_code=404, detail="unknown analysis_id")
+        body = {k: v for k, v in stored.items() if not k.startswith("_")}
+        body["documents"] = stored.get("_documents", [])
+    return body
+
+
+@app.get("/decisions")
+def list_decisions(analysis_id: Optional[str] = None):
+    """All recorded human decisions (optionally for one analysis), in
+    recording order — the shared vote thread every participant sees."""
+    with _state_lock:
+        records = list(_decisions)
+    if analysis_id:
+        records = [r for r in records if r.get("analysis_id") == analysis_id]
+    return {"decisions": records, "count": len(records)}
+
+
 @app.post("/decisions", status_code=201)
 def create_decision(payload: ReviewDecisionBody):
     """Record a HUMAN decision on one proposed item (T4, SPEC section 6).

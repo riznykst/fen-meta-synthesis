@@ -142,6 +142,44 @@ def test_analyze_502_when_contract_fails_after_one_retry(monkeypatch, tmp_path):
     assert call.call_count == 2
 
 
+def test_shared_thread_second_participant_can_join(monkeypatch):
+    """A second tab/user must see the same proposals and votes: the thread
+    lives on the server (GET /analyses, /analyses/{id}, /decisions), not in
+    the first tab's memory."""
+    client = _client(monkeypatch)
+    with mock.patch.object(
+        analyze_svc, "chat_completion_detailed", return_value=_result(SYNTHETIC_RESPONSE)
+    ):
+        created = client.post("/analyze", json=DOCS_PAYLOAD)
+    assert created.status_code == 200
+    analysis_id = created.json()["analysis_id"]
+
+    listed = client.get("/analyses")
+    assert listed.status_code == 200
+    assert listed.json()["count"] == 1
+    assert listed.json()["analyses"][0]["analysis_id"] == analysis_id
+
+    fetched = client.get(f"/analyses/{analysis_id}")
+    assert fetched.status_code == 200
+    body = fetched.json()
+    assert body["analysis"]["claims"][0]["claim_id"] == "c1"
+    assert body["documents"][0]["document_id"] == "d1"  # for Show-in-source
+    assert client.get("/analyses/nope").status_code == 404
+
+    # two distinct reviewers vote on the shared proposal
+    for reviewer in ("ana", "boris"):
+        resp = client.post("/decisions", json={
+            "analysis_id": analysis_id, "item_id": "c1", "item_type": "claim",
+            "verdict": "accept", "reviewer": reviewer, "comment": "",
+        })
+        assert resp.status_code == 201
+
+    votes = client.get("/decisions", params={"analysis_id": analysis_id})
+    assert votes.status_code == 200
+    assert [d["reviewer"] for d in votes.json()["decisions"]] == ["ana", "boris"]
+    assert votes.json()["count"] == 2
+
+
 def test_analyze_502_when_not_configured(monkeypatch):
     class _Off:
         enabled = False

@@ -239,7 +239,10 @@ def build_record(analyses: dict, decisions: list, item_id: str,
 
 def accepted_records(analyses: dict, decisions: list) -> list:
     """Registry showcase: every item whose CURRENT status is accepted
-    (latest human decision wins), newest decision first."""
+    (latest human decision wins), newest decision first. Each record also
+    carries the full vote trail (who voted how, in recording order) and the
+    number of distinct voters, so the registry shows the community, not just
+    the last accepting reviewer."""
     latest = {}
     for record in decisions:
         latest[(record.get("analysis_id"), record.get("item_id"))] = record
@@ -253,6 +256,21 @@ def accepted_records(analyses: dict, decisions: list) -> list:
             item = find_item(analysis, item_type, item_id)
             if item is not None:
                 break
+        votes = [
+            {
+                "reviewer": d.get("reviewer"),
+                "verdict": d.get("verdict"),
+                "status": d.get("status"),
+                "comment": d.get("comment", ""),
+                "recorded_at": d.get("recorded_at"),
+            }
+            for d in decisions
+            if d.get("analysis_id") == analysis_id and d.get("item_id") == item_id
+        ]
+        voters = {}
+        for v in votes:
+            if v["reviewer"]:
+                voters[v["reviewer"]] = True
         out.append({
             "analysis_id": analysis_id,
             "item_id": item_id,
@@ -266,6 +284,8 @@ def accepted_records(analyses: dict, decisions: list) -> list:
             "comment": record.get("comment", ""),
             "recorded_at": record.get("recorded_at"),
             "decision_id": record.get("decision_id"),
+            "voter_count": len(voters),
+            "votes": votes,
             "export_path": f"/records/{item_id}?analysis_id={analysis_id}",
         })
     out.sort(key=lambda r: r.get("recorded_at") or "", reverse=True)
