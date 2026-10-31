@@ -2,6 +2,20 @@
 
 Legend: `[x]` done · `[~]` partial · `[ ]` open. Snapshot: 2026-09-02 (kept current).
 
+## Standing rules (do not close)
+
+- [ ] **P0 — Never touch the parent repository.** All FEN × Meta work
+  happens only in `riznykst/fen-meta-synthesis`. The parent repository
+  `riznykst/fen-triadic-synthesis` is a frozen reference for the
+  whitepaper v4, `CITATION.cff`, and the Prototype Fund application:
+  no commits, pushes, merges, branch/tag deletions, or settings changes
+  there — fetch/read only. Its authoritative frozen state is the
+  `v0.2.8` / `baseline-pre-hackathon` tag (`8c1164d`), regardless of where
+  its `main` HEAD later moves. Deleting the archival
+  `hackathon/meta-ai-synthesis` branch there is a separate,
+  explicitly owner-confirmed step, never routine cleanup.
+  (Recorded 2026-10-31 at the owner's instruction; see `AGENTS.md`.)
+
 ## Delivered
 - [x] MVP core: FEN Bridge (outbound + webhook), Validation Result Consumer, mock DAO, shared Pydantic contracts, Kafka topics, docker-compose stack
 - [x] ADR-001..006: hash-only anchoring · federation node · PID scheme (ARK/w3id, g/v/r/s) · LLM decision-support · participation/QV (ADR-005) · tokenless challenge window draft (ADR-006)
