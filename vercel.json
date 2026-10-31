@@ -13,7 +13,9 @@
     { "source": "/review",  "destination": "/web/portal/review.html" },
     { "source": "/review/", "destination": "/web/portal/review.html" },
     { "source": "/demo",    "destination": "/web/portal/demo.html" },
-    { "source": "/demo/",   "destination": "/web/portal/demo.html" }
+    { "source": "/demo/",   "destination": "/web/portal/demo.html" },
+    { "source": "/faq",     "destination": "/web/portal/faq.html" },
+    { "source": "/faq/",    "destination": "/web/portal/faq.html" }
   ],
   "redirects": [
     { "source": "/index.html",    "destination": "/",         "permanent": true },

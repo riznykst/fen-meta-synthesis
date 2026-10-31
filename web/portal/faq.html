@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FEN × Meta — User Wiki & FAQ</title>
+<style>
+  body { margin:0; min-height:100vh; background:linear-gradient(135deg,#efece6,#e7e4dc); font-family:system-ui,sans-serif; color:#1c1b1f; padding:32px 16px; box-sizing:border-box; }
+  .wrap { max-width:860px; margin:0 auto; }
+  header { text-align:center; margin-bottom:20px; }
+  header h1 { font-family:Georgia,serif; font-size:24px; margin:0 0 4px; font-weight:400; }
+  header .sub { font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:#6b6560; }
+  header .switch, .toc a { display:inline-block; margin:6px 3px 0; font-size:11px; color:#2d5a8e; border:1px solid #2d5a8e55; border-radius:999px; padding:5px 12px; text-decoration:none; background:#fff; }
+  .panel { background:#fdfcfa; border:1.5px solid #2d5a8e; border-radius:16px; padding:20px 18px; margin-bottom:16px; }
+  .panel h2 { font-family:Georgia,serif; font-size:20px; font-weight:400; margin:0 0 8px; }
+  .panel h3 { font-family:Georgia,serif; font-weight:400; margin:16px 0 6px; }
+  p, li { font-size:13px; line-height:1.6; }
+  .meta { font-size:11px; color:#6b6560; }
+  table { border-collapse:collapse; width:100%; margin:10px 0; font-size:12.5px; }
+  th { text-align:left; color:#6b6560; font-size:10px; letter-spacing:.08em; text-transform:uppercase; padding:6px 8px 6px 0; vertical-align:top; }
+  td { padding:6px 8px 6px 0; border-bottom:1px solid #e3ded2; vertical-align:top; line-height:1.5; }
+  details { border:1px solid #e3ded2; border-radius:10px; background:#fff; padding:10px 12px; margin-bottom:8px; }
+  summary { cursor:pointer; font-weight:700; font-size:13px; min-height:28px; }
+  code { background:#eee9fa; padding:1px 5px; border-radius:3px; font-size:11.5px; }
+  blockquote { margin:8px 0; padding:8px 12px; border-left:3px solid #2d5a8e; background:#f7f5f0; font-size:12.5px; }
+  .badge { display:inline-block; padding:2px 7px; border-radius:3px; font-size:10px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
+  .b-gr { color:#2e7d5b; background:#e6f4ee; } .b-rd { color:#b23a3a; background:#fae8e8; } .b-gd { color:#8b6914; background:#faf3e0; } .b-bl { color:#2d5a8e; background:#e8eff7; }
+  .warn { background:#fdf3f3; border:1.5px solid #b23a3a; border-radius:10px; padding:10px 12px; font-size:12.5px; line-height:1.6; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>User Wiki &amp; FAQ</h1>
+    <div class="sub">FEN × Meta · AI proposes · humans decide · every decision keeps its provenance</div>
+    <a class="switch" href="/web/portal/demo.html">← Simplified demo</a>
+    <a class="switch" href="/web/portal/review.html">Full Review</a>
+    <a class="switch" href="/web/portal/index.html">Candidates &amp; voting</a>
+  </header>
+
+  <nav class="panel toc" aria-label="Contents">
+    <h2>Contents</h2>
+    <a href="#start">Getting started</a>
+    <a href="#workflow">The workflow</a>
+    <a href="#verdicts">Verdict buttons</a>
+    <a href="#statuses">Statuses &amp; lifecycle</a>
+    <a href="#quotes">Quotes &amp; verification</a>
+    <a href="#contradictions">Contradictions</a>
+    <a href="#dictionary">Dictionary badges</a>
+    <a href="#provenance">Provenance, registry &amp; export</a>
+    <a href="#candidates">Candidates &amp; community voting</a>
+    <a href="#errors">Errors &amp; troubleshooting</a>
+    <a href="#data">Data, privacy &amp; licences</a>
+    <a href="#glossary">Glossary</a>
+    <a href="#limits">Limitations</a>
+  </nav>
+
+  <section class="panel" id="start">
+    <h2>Getting started</h2>
+    <details open>
+      <summary>What is this system, in one paragraph?</summary>
+      <p>FEN × Meta is a human-governed validation layer for knowledge extracted
+      from documents by an AI model. The model (Meta <code>muse-spark-1.3</code>)
+      reads two or three source documents and <em>proposes</em> structured claims.
+      Deterministic code — no model involved — checks that every quoted piece of
+      evidence really exists in its source. A human reviewer then accepts,
+      rejects, or disputes each proposal. Only that human decision creates a
+      final status, and every decision is recorded with its full provenance:
+      source document, exact quote, model and prompt, reviewer, verdict, and time.</p>
+    </details>
+    <details>
+      <summary>What is the fastest way to see it work?</summary>
+      <p>Open the simplified demo, leave the pre-filled synthetic documents (or
+      switch to the Sumerian dictionary entries), and click
+      <b>Analyse documents</b>. You will get proposals labelled
+      “Proposal — awaiting human decision”. Click <b>Show in source</b> to see a
+      quote highlighted in its document, then record an <b>Accept</b> on one
+      proposal and a <b>Dispute</b> on the contradiction. The accepted item
+      appears in the Registry with a downloadable record. The whole path takes
+      about a minute.</p>
+    </details>
+    <details>
+      <summary>How do I use my own documents?</summary>
+      <p>Three ways, all equivalent: paste text into the document fields; click
+      <b>+ Add third document</b> for a third source; or use
+      <b>Upload document(s)…</b> / drag-and-drop with <code>.txt</code>,
+      <code>.md</code>, or <code>.json</code> files. A JSON file shaped as
+      <code>{"documents":[{"title": "...", "text": "..."}]}</code> expands into
+      several documents. Files are read in your browser and placed into the
+      fields — nothing is sent anywhere until you click Analyse. Limits: at most
+      3 documents and 30,000 characters in total (the same limit the analysis
+      API enforces). Over-limit text is rejected with an explanation, never
+      silently truncated, because truncation would break quote verification.</p>
+    </details>
+    <details>
+      <summary>What do the dataset buttons do?</summary>
+      <p><b>Demo (synthetic)</b> loads an invented neutral example, labelled
+      synthetic so it can never be mistaken for corpus data.
+      <b>Sumerian dictionary entries (ePSD2)</b> loads short, verified dictionary
+      excerpts for the candidate lemmas <code>lu</code>, <code>bahar</code>, and
+      <code>me</code>. They are dictionary excerpts — not corpus records and not
+      gold evaluation data. Gold data is created only from attested source texts
+      selected and verified by a human.</p>
+    </details>
+  </section>
+
+  <section class="panel" id="workflow">
+    <h2>The workflow, step by step</h2>
+    <ol>
+      <li><b>Sources.</b> Two or three documents, each identified
+      (<code>d1</code>, <code>d2</code>, <code>d3</code> in the demo).</li>
+      <li><b>Model proposal.</b> The Meta model returns structured JSON: claims
+      (each with a verbatim quote, the claim as stated, and the model's
+      interpretation kept separate), ambiguities, an uncertainty level, a review
+      recommendation, and contradictions with alternative interpretations.</li>
+      <li><b>Deterministic checks.</b> Code validates the contract, checks that
+      every quote can be located in its document, that contradictions reference
+      real claims, and that identifiers are unique. The model cannot influence
+      this step.</li>
+      <li><b>Human review.</b> You read the proposal next to its evidence and
+      record Accept, Reject, or Dispute, optionally with a comment. Your name
+      in the Reviewer field is recorded with the decision (attribution, not
+      identity verification).</li>
+      <li><b>Record.</b> The decision is appended to the registry. Accepted
+      knowledge is showcased in the Registry section and can be exported as a
+      JSON-LD record carrying the whole chain.</li>
+    </ol>
+  </section>
+
+  <section class="panel" id="verdicts">
+    <h2>The verdict buttons — what each one means</h2>
+    <table>
+      <tr><th>Button</th><th>What you are saying</th><th>What happens next</th></tr>
+      <tr>
+        <td><b>Accept</b></td>
+        <td>“This claim faithfully represents its source, and I take responsibility for it.”</td>
+        <td>Status becomes <span class="badge b-gr">Accepted</span>. The item enters the <b>Registry</b> as accepted knowledge and can be downloaded as a JSON-LD record. Available <b>only</b> when the quote is verified — otherwise the button is disabled and the API returns <code>409</code>.</td>
+      </tr>
+      <tr>
+        <td><b>Reject</b></td>
+        <td>“This must not become knowledge” — wrong, invented, or not supported by this source.</td>
+        <td>Status becomes <span class="badge b-rd">Rejected</span>. The record is <b>not deleted</b>: it stays in the decision history and provenance with your comment, so it remains visible that the community already considered and rejected it. It never enters the Registry.</td>
+      </tr>
+      <tr>
+        <td><b>Dispute</b></td>
+        <td>“I disagree or I am not sure — this needs discussion or an expert.”</td>
+        <td>Status becomes <span class="badge b-gd">Disputed</span>. There is no final outcome: the item stays open for another reviewer or an expert. This is the normal verdict for contradictions between sources.</td>
+      </tr>
+    </table>
+    <details>
+      <summary>How do I read the “Decided proposals” list?</summary>
+      <p>Every line is a decision that was already recorded (not a button), in
+      one format:</p>
+      <blockquote>[Final status] · [reviewer] · [proposal id] — [your comment] · [time, UTC]</blockquote>
+      <p>Example: <em>“Rejected by a human reviewer · reviewer-1 · c3 — Plurality
+      was expressed by reduplication…”</em> means proposal <code>c3</code> was
+      rejected with that comment. A contradiction such as <code>x1</code> marked
+      Disputed was deliberately left open instead of being decided on the spot.</p>
+    </details>
+    <details>
+      <summary>Can I change my mind after deciding?</summary>
+      <p>Yes — decide again on the same item. Decisions are <b>immutable and
+      append-only</b>: the new verdict becomes a new record, the old one stays
+      in the history untouched, and the item's current status is always the
+      <em>latest</em> decision. Nothing is ever edited or silently overwritten.</p>
+    </details>
+    <details>
+      <summary>Why is there no “Edit proposal” button?</summary>
+      <p>Deliberately. A proposal is the model's output; editing it would destroy
+      the audit trail (nobody could later tell what the model said versus what a
+      human wrote). If a proposal is almost right, reject or dispute it with a
+      comment explaining the correction, or submit a corrected document and
+      analyse again — both actions stay visible in the record.</p>
+    </details>
+  </section>
+
+  <section class="panel" id="statuses">
+    <h2>Statuses and the proposal lifecycle</h2>
+    <table>
+      <tr><th>Status</th><th>Meaning</th><th>Who can set it</th></tr>
+      <tr><td><span class="badge b-bl">Proposed</span></td><td>The model suggested it; nobody has judged it yet. This is the only status a fresh analysis can have.</td><td>The model (by proposing)</td></tr>
+      <tr><td><span class="badge b-gr">Accepted</span></td><td>A human accepted it; it is in the Registry.</td><td>Human only</td></tr>
+      <tr><td><span class="badge b-rd">Rejected</span></td><td>A human rejected it; kept in the record, not in the Registry.</td><td>Human only</td></tr>
+      <tr><td><span class="badge b-gd">Disputed</span></td><td>A human flagged disagreement; awaiting discussion or an expert.</td><td>Human only</td></tr>
+    </table>
+    <p>The architectural rule of the whole system: <b>the model only proposes</b>.
+    No code path can assign <code>accepted</code> without a recorded human
+    decision behind it. This follows the project's existing decision ADR-004.</p>
+  </section>
+
+  <section class="panel" id="quotes">
+    <h2>Quotes and verification</h2>
+    <details open>
+      <summary>What exactly is verified about a quote?</summary>
+      <p>That the quote can be <b>located</b> in the referenced source document:
+      an exact substring match, or a match after whitespace is normalised (so
+      line breaks and multiple spaces do not matter). The check is deterministic
+      code; the model is not asked and cannot influence it. Quote verification
+      proves <em>traceability</em> — the words are really in the source. It does
+      <b>not</b> prove the claim is true, and it does not prove the model
+      understood the quote correctly. Judging meaning remains your job as the
+      reviewer.</p>
+    </details>
+    <details>
+      <summary>What does the red card mean?</summary>
+      <p>The proposal's quote could not be located in its source — the classic
+      case of a model inventing evidence. The card is shown red, states
+      “Quote NOT verified”, and <b>Accept is disabled</b>. The API enforces the
+      same rule server-side (<code>409</code>), so bypassing the button in the
+      interface does not help. You can still Reject or Dispute the item — that
+      is usually the right response to an invented quote.</p>
+    </details>
+    <details>
+      <summary>What does “Show in source” do?</summary>
+      <p>It opens the proposal's source document with the exact quote
+      highlighted. Use it before deciding: it is the fastest way to see the
+      evidence in context instead of trusting the card. If the quote cannot be
+      located, the panel tells you so — that is precisely why acceptance is
+      disabled for that item.</p>
+    </details>
+    <details>
+      <summary>Why does my valid quote show as unverified?</summary>
+      <p>Usual causes: the quote was edited in the document field after analysis
+      (re-run Analyse); punctuation or case differs (matching normalises
+      whitespace, not punctuation); or the quote spans text that the model
+      joined from two places. Check with Show in source, then either fix the
+      document and re-analyse, or Reject with a comment.</p>
+    </details>
+  </section>
+
+  <section class="panel" id="contradictions">
+    <h2>Contradictions between sources</h2>
+    <p>A contradiction card appears when the model thinks two claims may
+    conflict. It shows both claims side by side with their quotes, a
+    <b>kind</b> (for example <code>temporal_mismatch</code>,
+    <code>value_mismatch</code>, <code>direct_negation</code>, or
+    <code>other</code>), the model's explanation, and
+    <b>alternative interpretations</b> — readings under which the conflict would
+    dissolve (“the dates may refer to different events”, and similar).</p>
+    <details>
+      <summary>How should I decide a contradiction?</summary>
+      <p><b>Dispute</b> is the default: you are recording that the sources
+      disagree and a person with domain knowledge must resolve it.
+      <b>Accept</b> on a contradiction means “yes, this is a genuine conflict
+      worth keeping as a documented disagreement” (still only possible when the
+      involved quotes are verified). <b>Reject</b> means the model invented the
+      conflict — for example it misread one of the quotes, which you can check
+      with Show in source on both claims.</p>
+    </details>
+  </section>
+
+  <section class="panel" id="dictionary">
+    <h2>Dictionary badges (ePSD2)</h2>
+    <p>On proposals that name one of the verified Sumerian candidate lemmas, the
+    card shows a green dictionary badge, for example:
+    <em>Dictionary (ePSD2): lu [PERSON] (N) · person; man · 18,895 attestations
+    (CC BY-SA 3.0)</em>, linking to the dictionary entry.</p>
+    <details>
+      <summary>What does the badge prove — and what does it not prove?</summary>
+      <p>It proves the lemma exists in the electronic Pennsylvania Sumerian
+      Dictionary with that gloss and that many corpus occurrences. It is
+      orientation metadata for the reviewer. It does <b>not</b> verify the
+      proposal's quote (that is the separate quote check), it is not evidence
+      for the claim, and it never counts as a vote.</p>
+    </details>
+    <details>
+      <summary>Why are there two badges for “me”?</summary>
+      <p>Because ePSD2 has two different headwords written <code>me</code>:
+      <code>me [BEING]</code> (noun — Being, divine properties) and
+      <code>me [BE]</code> (verb — to be). The badge follows the gloss in the
+      proposal so the two are never merged. The same distinction applies in the
+      lemma candidate register: noun and verb are separate entries.</p>
+    </details>
+    <details>
+      <summary>Why is grammar (cases, pronouns, prefixes) not in the lemma data?</summary>
+      <p>By design. Case endings, pronouns and verbal affixes are grammatical
+      markers, not lemmas. Recording them as dataset lemmas would add noise to
+      lemma-extraction evaluation. They belong in grammar references, not in
+      the candidate register.</p>
+    </details>
+  </section>
+
+  <section class="panel" id="provenance">
+    <h2>Provenance, the Registry, and record export</h2>
+    <details open>
+      <summary>What does the Provenance view show?</summary>
+      <p>The complete chain for one item: the source document, the exact quote,
+      the model proposal (model name, SHA-256 prompt hash, timestamp), and every
+      human decision in order (reviewer, verdict, comment, time). If you can see
+      this chain, you can audit how the claim got its status without trusting
+      anyone's summary of it.</p>
+    </details>
+    <details>
+      <summary>Where does accepted knowledge actually go?</summary>
+      <p>In this demo build: into the <b>Registry</b>. Accepted items are listed
+      in the Registry section with their statement, quote, reviewer, and time,
+      and each can be downloaded as a <b>JSON-LD record</b>
+      (<code>GET /records/{item_id}</code>) containing the claim, quote, source
+      documents, model and prompt hash, and all decisions — the artefact that a
+      knowledge graph can later ingest unchanged. When the demo is started via
+      <code>scripts/start_demo.py</code>, analyses and decisions are also
+      persisted to an append-only local log (<code>artifacts/store.jsonl</code>),
+      so restarting the demo does not lose your verdicts. Writing decisions into
+      the baseline Kafka → RDF governance pipeline exists in the underlying
+      research prototype but is deliberately not claimed as wired into this
+      hackathon workflow.</p>
+    </details>
+    <details>
+      <summary>What is in the downloaded JSON-LD record?</summary>
+      <p>A <code>gfen:ValidationRecord</code>: item and analysis identifiers,
+      current status, the claim object (quote, statement, interpretation,
+      uncertainty), source documents, the model proposal metadata (model,
+      prompt hash, creation time), and the full decision list. It is designed
+      to be self-contained: a third party can verify the chain from the file
+      alone.</p>
+    </details>
+    <details>
+      <summary>Why can I not download a record for a proposal I have not decided?</summary>
+      <p>Because a record is a <em>decision artefact</em>. The API returns
+      <code>409</code> for an undecided item: a model proposal on its own must
+      never be exportable as if it were validated knowledge.</p>
+    </details>
+  </section>
+
+  <section class="panel" id="candidates">
+    <h2>Candidates &amp; community voting (classic portal)</h2>
+    <p>The classic portal and Triadic view are the pre-hackathon baseline demo:
+    candidates are voted on by a simulated community DAO. Their outcome buttons
+    mean the same as the Review verdicts:</p>
+    <table>
+      <tr><th>Candidates button</th><th>Equivalent verdict</th><th>Meaning</th></tr>
+      <tr><td><code>validated</code></td><td>Accept</td><td>Include this entity as community-validated.</td></tr>
+      <tr><td><code>disputed</code></td><td>Dispute</td><td>Flag disagreement; needs discussion or experts.</td></tr>
+      <tr><td><code>rejected</code></td><td>Reject</td><td>Do not include; the rejection stays on record.</td></tr>
+    </table>
+    <details>
+      <summary>What should I read before voting on a candidate?</summary>
+      <p>Click <b>“Details — what am I voting on?”</b> in the candidates list (or
+      in the Triadic consensus list). The detail page shows the entity, document,
+      current votes and quorum progress, peer assessments with comments, the
+      recorded decision if one exists, the governance registry record, an
+      explanation of each outcome, and the same voting buttons — so you can
+      decide on the page where you read the evidence.</p>
+    </details>
+    <details>
+      <summary>What are quorum, QV intensity, cost, and delegation?</summary>
+      <p>These belong to the simulated DAO mechanics of the baseline demo.
+      <b>Quorum</b>: in community mode a candidate is decided when enough votes
+      arrive and the majority wins. <b>Quadratic Voting (QV)</b>: a vote has an
+      intensity of 1–5 and costs intensity² credits, so strong opinions are
+      possible but expensive; a decision is taken when one outcome's weighted
+      score reaches the threshold. <b>Delegation</b> (liquid democracy): a voter
+      who has not voted can delegate their weight to another voter, and it
+      follows that voter's choice. These mechanisms are a simulation for the
+      demo (ADR-005); production governance lives outside this repository.</p>
+    </details>
+    <details>
+      <summary>What are the small export links (ttl, jsonld, nt, crate)?</summary>
+      <p>They download the candidate's governance record from the registry in
+      different formats: Turtle, JSON-LD, N-Triples, or an RO-Crate package.
+      They are read-only exports of what was decided, not editing tools.</p>
+    </details>
+  </section>
+
+  <section class="panel" id="errors">
+    <h2>Errors and troubleshooting</h2>
+    <table>
+      <tr><th>What you see</th><th>What it means</th><th>What to do</th></tr>
+      <tr><td>“The model did not respond…” (502)</td><td>The model provider is unreachable, not configured, or returned output that failed the contract after one format retry. Nothing was saved and no proposal was invented as a fallback.</td><td>Check the local backend is running (<code>scripts/start_demo.py</code>) and the provider configuration; then try again.</td></tr>
+      <tr><td>422 on Analyse</td><td>Invalid input: no documents, duplicate document ids, or more than 30,000 characters in total. The request is rejected before any model call.</td><td>Fix the documents; split long texts instead of expecting truncation.</td></tr>
+      <tr><td>409 when accepting</td><td>You tried to accept an item whose quote is not verified — or to export a record for an undecided item.</td><td>Check the quote with Show in source; Reject or Dispute instead, or fix the document and re-analyse.</td></tr>
+      <tr><td>404 on provenance / record</td><td>The item id is unknown to the current registry — often an item from an earlier session after a restart without persistence.</td><td>Run the analysis again in this session, or start via <code>start_demo.py</code> so the store persists.</td></tr>
+      <tr><td>“Registry unavailable”</td><td>The demo could not reach the local API for the Registry section. Proposals and voting are unaffected once the backend is up.</td><td>Start (or restart) the local demo stack.</td></tr>
+      <tr><td>Analyse works locally but not on the public website</td><td>The hosted page is the static interface; the model backend runs locally and is not public.</td><td>Run the local demo for analysis; the public page is for reading and presentation.</td></tr>
+    </table>
+  </section>
+
+  <section class="panel" id="data">
+    <h2>Data, privacy, and licences</h2>
+    <details>
+      <summary>Where does my uploaded text go?</summary>
+      <p>Uploads are read in your browser into the document fields. Text is sent
+      to the model service only when you click Analyse, as the analysis request.
+      API keys are never entered in the interface and never appear in responses,
+      records, or logs; they come from environment variables on the backend
+      machine only.</p>
+    </details>
+    <details>
+      <summary>Which data in the demo is real, synthetic, or recorded?</summary>
+      <p>Labels are explicit everywhere: <b>synthetic</b> documents and fixtures
+      are invented neutral examples; the Sumerian material is short dictionary
+      excerpts from ePSD2 for verified candidate lemmas; real corpus texts and
+      gold evaluation data are supplied and licence-checked by a human and are
+      never generated by the agent. Model responses used in tests are marked
+      SYNTHETIC or RECORDED in their fixture files.</p>
+    </details>
+    <details>
+      <summary>Can I reuse the Sumerian dictionary material?</summary>
+      <p>ePSD2/Oracc data is licensed <b>CC BY-SA 3.0</b>: reuse is allowed with
+      attribution, and substantial reuses must keep the same licence. The
+      canonical attribution is recorded in <code>eval/dataset/SOURCES.md</code>
+      together with the other sources' terms (notably: ETCSL texts are not
+      openly licensed and are not republished here).</p>
+    </details>
+  </section>
+
+  <section class="panel" id="glossary">
+    <h2>Glossary</h2>
+    <table>
+      <tr><th>Term</th><th>Meaning in this system</th></tr>
+      <tr><td>Claim</td><td>One atomic statement extracted from a source, carried by an exact quote.</td></tr>
+      <tr><td>Quote</td><td>The verbatim evidence span copied from the source document; the unit of verification.</td></tr>
+      <tr><td>Interpretation</td><td>The model's reading of a claim, stored in a separate field so it can never masquerade as the source's words.</td></tr>
+      <tr><td>Proposal</td><td>Any model output before a human decision. Proposals have no authority.</td></tr>
+      <tr><td>Provenance</td><td>The auditable chain: document → quote → model proposal → human decision(s).</td></tr>
+      <tr><td>Prompt hash</td><td>SHA-256 of the exact prompts that produced a proposal, so the run can be reproduced and audited.</td></tr>
+      <tr><td>Lemma</td><td>A dictionary headword (for example <code>lu [person]</code>), independent of its spellings in texts.</td></tr>
+      <tr><td>Attestation</td><td>A real occurrence of a form in a corpus text, with a citable source.</td></tr>
+      <tr><td>Gold data</td><td>Human-made reference answers for evaluation. Agents never generate gold data here.</td></tr>
+      <tr><td>B0 baseline</td><td>The share of proposals with unverified quotes — what would have passed as trustworthy without the verification gate.</td></tr>
+      <tr><td>Registry</td><td>The store of recorded decisions and accepted knowledge (JSONL-backed in the demo launcher).</td></tr>
+    </table>
+  </section>
+
+  <section class="panel" id="limits">
+    <h2>Limitations — read this before trusting the demo</h2>
+    <div class="warn">
+      Quote verification proves that words exist in a source, <b>not</b> that a
+      claim is true and not that the model understood them. Reviewers still
+      judge meaning. Contradiction detection depends on the model and is so far
+      measured on a small, clearly labelled synthetic set; corpus measurements
+      follow the human-supplied dataset. The DAO, voting, reputation, and ledger
+      anchors of the baseline are simulations. The hosted website is a static
+      interface; the model backend runs locally.
+    </div>
+    <p class="meta" style="margin-top:10px">Rule that never moves: the model only
+    proposes. <code>accepted</code> exists only after a recorded human decision.</p>
+  </section>
+</div>
+</body>
+</html>
