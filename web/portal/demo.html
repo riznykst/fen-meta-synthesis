@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FEN × Meta — Demo (AI proposes, human decides)</title>
+<style>
+  body { margin:0; min-height:100vh; background:linear-gradient(135deg,#efece6,#e7e4dc); font-family:system-ui,sans-serif; color:#1c1b1f; padding:28px 14px; box-sizing:border-box; }
+  .wrap { max-width:820px; margin:0 auto; }
+  header { text-align:center; margin-bottom:16px; }
+  header h1 { font-family:Georgia,serif; font-size:23px; margin:0 0 4px; font-weight:400; }
+  header .sub { font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:#6b6560; }
+  .model { display:inline-block; margin-top:8px; font-size:11px; background:#e8eff7; color:#2d5a8e; border:1px solid #2d5a8e44; padding:4px 10px; border-radius:999px; }
+  .steps { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin:14px 0 18px; }
+  .step { font-size:11px; font-weight:700; letter-spacing:.03em; background:#fff; border:1px solid #2d5a8e44; color:#2d5a8e; border-radius:999px; padding:7px 12px; }
+  .panel { background:#fdfcfa; border:1.5px solid #2d5a8e; border-radius:16px; padding:18px; margin-bottom:16px; }
+  .panel h2 { font-family:Georgia,serif; font-size:19px; font-weight:400; margin:0 0 6px; }
+  .lbl { display:block; font-size:10px; letter-spacing:.09em; text-transform:uppercase; color:#6b6560; font-weight:600; margin:10px 0 3px; }
+  input, textarea { width:100%; border:1px solid #e3ded2; border-radius:6px; padding:9px 10px; font-family:system-ui,sans-serif; font-size:13px; color:#1c1b1f; background:#fff; box-sizing:border-box; outline:none; }
+  textarea { min-height:76px; resize:vertical; }
+  .btn { width:100%; min-height:44px; padding:10px 0; border-radius:8px; border:none; background:#2d5a8e; color:#fff; font-weight:700; font-size:13px; cursor:pointer; margin-top:14px; }
+  .btn:disabled { opacity:.55; cursor:not-allowed; }
+  .btn.secondary { background:#fff; color:#2d5a8e; border:1.5px solid #2d5a8e; margin-top:10px; }
+  .datasets { display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 4px; }
+  .dataset-btn { flex:1 1 220px; min-height:44px; border-radius:8px; border:1.5px solid #2d5a8e; background:#fff; color:#2d5a8e; font-weight:700; font-size:12.5px; cursor:pointer; padding:10px; }
+  .dataset-btn.active { background:#2d5a8e; color:#fff; }
+  .badge { display:inline-block; padding:2px 7px; border-radius:3px; font-size:10px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
+  .b-gr { color:#2e7d5b; background:#e6f4ee; } .b-rd { color:#b23a3a; background:#fae8e8; } .b-gd { color:#8b6914; background:#faf3e0; } .b-bl { color:#2d5a8e; background:#e8eff7; }
+  .item { border:1px solid #e3ded2; border-radius:10px; padding:12px; background:#fff; margin-bottom:12px; }
+  .item.unverified { border:2px solid #b23a3a; background:#fdf3f3; }
+  .card-head { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-bottom:6px; }
+  .statement { font-size:14px; font-weight:600; margin:4px 0; }
+  .quote { margin:8px 0; padding:8px 12px; border-left:3px solid #2d5a8e; background:#f7f5f0; font-size:12.5px; }
+  .unverified .quote { border-left-color:#b23a3a; }
+  .interp { font-size:12.5px; line-height:1.45; }
+  .meta { font-size:10.5px; color:#6b6560; }
+  .decision-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+  .decision-btn { flex:1 1 120px; min-height:44px; border:none; border-radius:8px; color:#fff; font-size:12.5px; font-weight:700; cursor:pointer; padding:10px 8px; }
+  .decision-btn.accept { background:#2e7d5b; } .decision-btn.reject { background:#b23a3a; }
+  .decision-btn.dispute { background:#8b6914; } .decision-btn.prov { background:#2d5a8e; }
+  .decision-btn:disabled { opacity:.45; cursor:not-allowed; }
+  .comment { margin-top:8px; }
+  .dict-badge { font-size:11.5px; background:#e6f4ee; border:1px solid #2e7d5b55; border-radius:6px; padding:6px 9px; margin-top:8px; }
+  .dict-badge a { color:#2e7d5b; font-weight:700; }
+  .contra-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px; }
+  .mini { border:1px solid #e3ded2; border-radius:8px; padding:8px; background:#fdfcfa; }
+  .history-item { font-size:12px; padding:6px 0; border-bottom:1px solid #e3ded2; }
+  .note { font-size:11.5px; color:#6b6560; text-align:center; padding:14px 8px; }
+  .error { color:#b23a3a; font-size:12.5px; line-height:1.5; margin-top:10px; }
+  .state { font-size:12px; color:#2d5a8e; margin-top:8px; min-height:16px; }
+  mark { background:#ffe58a; padding:0 2px; border-radius:2px; }
+  .source-text { white-space:pre-wrap; font-size:12.5px; line-height:1.6; background:#fff; border:1px solid #e3ded2; border-radius:8px; padding:10px 12px; }
+  footer { text-align:center; font-size:11px; color:#6b6560; padding:8px 0 18px; }
+  footer a { color:#2d5a8e; }
+  @media (max-width:480px) { body { padding:14px 8px; } .contra-grid { grid-template-columns:1fr; } .decision-btn { flex:1 1 44%; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>FEN × Meta — Human-Governed AI Synthesis</h1>
+    <div class="sub">AI proposes · human decides · every decision keeps its provenance</div>
+    <span class="model">Meta Model API · muse-spark-1.3 · via local backend</span>
+    <div class="steps" aria-label="Workflow steps">
+      <span class="step">1 · Sources</span>
+      <span class="step">2 · Model proposals</span>
+      <span class="step">3 · Quote check</span>
+      <span class="step">4 · Your decision</span>
+    </div>
+  </header>
+
+  <section class="panel" aria-label="Sources">
+    <h2>1 · Sources</h2>
+    <div class="datasets" role="group" aria-label="Dataset">
+      <button class="dataset-btn active" id="dataset-synthetic" type="button">Demo (synthetic)</button>
+      <button class="dataset-btn" id="dataset-sumerian" type="button">Sumerian dictionary entries (ePSD2)</button>
+    </div>
+    <p class="meta" id="datasetNote">Synthetic demo documents — invented neutral text, not corpus data. Replace with your own sources at any time.</p>
+    <label class="lbl" for="reviewer">Reviewer name (recorded with every decision)</label>
+    <input id="reviewer" value="reviewer-1">
+    <label class="lbl" for="doc1Title">Document 1 title</label>
+    <input id="doc1Title" value="Local oral tradition">
+    <label class="lbl" for="doc1">Document 1 text</label>
+    <textarea id="doc1">The hill Koshary marks the old trade route. In the local oral tradition, the hill Koshary is known as a landmark for traders. The river crossing at Sokolowizna was used by traders until 1903.</textarea>
+    <label class="lbl" for="doc2Title">Document 2 title</label>
+    <input id="doc2Title" value="Archive note">
+    <label class="lbl" for="doc2">Document 2 text</label>
+    <textarea id="doc2">A 1901 archive note states that the Sokolowizna crossing closed after the bridge was built downstream.</textarea>
+    <div id="doc3Block" style="display:none">
+      <label class="lbl" for="doc3Title">Document 3 title (optional)</label>
+      <input id="doc3Title" placeholder="e.g. A third, conflicting source">
+      <label class="lbl" for="doc3">Document 3 text (optional)</label>
+      <textarea id="doc3" placeholder="Paste a third source that may agree or conflict with the first two"></textarea>
+    </div>
+    <button class="btn secondary" id="addDocBtn" type="button">+ Add third document</button>
+    <button class="btn" id="analyzeBtn">Analyse documents →</button>
+    <div class="state" id="analyzeState" role="status"></div>
+    <div class="error" id="reviewError" role="alert"></div>
+    <p class="meta" id="analysisMeta"></p>
+  </section>
+
+  <section class="panel" aria-label="Proposals">
+    <h2>2–3 · Model proposals &amp; quote check</h2>
+    <div id="proposals"><p class="note">No proposals yet — analyse documents first. Every item stays a proposal until you decide.</p></div>
+  </section>
+
+  <section class="panel" aria-label="Decision and provenance">
+    <h2>4 · Your decision &amp; provenance</h2>
+    <div id="sourceView"><p class="note">Select “Show in source” on a proposal to see its quote highlighted in the source document.</p></div>
+    <div id="provenance"><p class="note">Select “Provenance” on a proposal to see document → quote → model proposal → decisions.</p></div>
+    <h3 style="font-family:Georgia,serif;font-weight:400">Decisions in this session</h3>
+    <div id="history"><p class="note">No human decisions yet — every item above is still a proposal.</p></div>
+  </section>
+
+  <footer>
+    Baseline views:
+    <a href="/web/portal/review.html">Full Review</a> ·
+    <a href="/web/portal/triadic.html">Triadic</a> ·
+    <a href="/web/portal/index.html">Classic candidates</a>
+  </footer>
+</div>
+<script src="/web/shared/escape.js"></script>
+<script src="/web/shared/api-base.js"></script>
+<script src="/web/shared/theme.js"></script>
+<script src="/web/portal/review.js"></script>
+<script src="/web/portal/demo.js"></script>
+</body>
+</html>

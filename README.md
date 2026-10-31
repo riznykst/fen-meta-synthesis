@@ -2,10 +2,11 @@
 
 **AI proposes. Humans decide. Every decision keeps its provenance.**
 
-**Live demo: https://fen-meta-synthesis.vercel.app/review** — the Review
-screen in the browser. (The hosted page is the static UI; running an
-analysis needs the local backend — `python scripts/start_demo.py`, see
-[DEMO.md](DEMO.md).)
+**Live demo: https://fen-meta-synthesis.vercel.app/demo** — the simplified
+one-screen demo (sources → proposals → quote check → your decision); the
+full Review screen is at `/review`. (The hosted page is the static UI;
+running an analysis needs the local backend —
+`python scripts/start_demo.py`, see [DEMO.md](DEMO.md).)
 
 FEN × Meta extends the open-source FEN Triadic Synthesis research prototype
 for the Meta Global AI Developer Hackathon. It adds one focused, end-to-end

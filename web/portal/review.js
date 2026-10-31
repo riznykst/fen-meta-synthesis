@@ -142,6 +142,7 @@
       + '<p class="meta">Uncertainty: ' + esc(claim.uncertainty) + " · provenance: " + esc(claim.provenance_status || "") + "</p>"
       + (amb.length ? '<p class="meta">Ambiguities: ' + amb.map(esc).join("; ") + "</p>" : "")
       + quoteNote
+      + dictionaryBadgeHtml(claim)
       + '<div class="decision-row"><button class="decision-btn prov" data-action="highlight" data-item="' + esc(claim.claim_id) + '">Show in source</button></div>'
       + decisionButtons(claim.claim_id, "claim", claim)
       + "</article>";
@@ -183,6 +184,63 @@
     }).join("");
   }
 
+  // Dictionary entries verified against ePSD2 for the Sumerian candidate
+  // lemmas (eval/candidates/sumerian-video-candidates.json; CC BY-SA 3.0,
+  // attribution in eval/dataset/SOURCES.md). Used only to badge a proposal
+  // whose quote/statement actually names the lemma — display metadata,
+  // never evidence and never a vote.
+  var DICTIONARY_ENTRIES = [
+    {
+      id: "o0033207", headword: "lu [PERSON] (N)", gloss: "person; man",
+      instances: 18895, citation: "http://oracc.org/epsd2/o0033207",
+      tokens: ["lu₂", "lu2", "lu"],
+    },
+    {
+      id: "o0024835", headword: "bahar [POTTER] (N)", gloss: "potter",
+      instances: 613, citation: "http://oracc.org/epsd2/o0024835",
+      tokens: ["baḫar", "bahar"],
+    },
+    {
+      id: "o0034101", headword: "me [BEING] (N)", gloss: "Being, divine properties enabling cosmic activity",
+      instances: 1174, citation: "http://oracc.org/epsd2/o0034101",
+      tokens: ["me"], glossHints: ["being", "divine properties"],
+    },
+    {
+      id: "o0034109", headword: "me [BE] (V)", gloss: "to be",
+      instances: 3919, citation: "http://oracc.org/epsd2/o0034109",
+      tokens: ["me"], glossHints: ["to be"],
+    },
+  ];
+
+  function dictionaryEntryForClaim(claim) {
+    if (!claim) return null;
+    var haystack = (" " + String(claim.quote || "") + " " + String(claim.statement || "")
+      + " " + String(claim.interpretation || "") + " ").toLowerCase();
+    for (var i = 0; i < DICTIONARY_ENTRIES.length; i++) {
+      var entry = DICTIONARY_ENTRIES[i];
+      var tokenHit = entry.tokens.some(function (t) {
+        var tok = t.toLowerCase();
+        return haystack.includes(" " + tok + " ") || haystack.includes(" " + tok + ",")
+          || haystack.includes(" " + tok + ".") || haystack.includes(" " + tok + ":");
+      });
+      if (!tokenHit) continue;
+      if (entry.glossHints && !entry.glossHints.some(function (g) { return haystack.includes(g); })) {
+        continue;
+      }
+      return entry;
+    }
+    return null;
+  }
+
+  function dictionaryBadgeHtml(claim) {
+    var entry = dictionaryEntryForClaim(claim);
+    if (!entry) return "";
+    return '<p class="dict-badge">Dictionary (ePSD2): <a href="' + esc(entry.citation)
+      + '" target="_blank" rel="noopener">' + esc(entry.headword) + "</a> · "
+      + esc(entry.gloss) + " · " + entry.instances.toLocaleString("en-US")
+      + ' attestations <span class="meta">(CC BY-SA 3.0)</span></p>';
+  }
+
   var api = {
     esc: esc,
     statusLabel: statusLabel,
@@ -195,6 +253,9 @@
     renderDecisionHistory: renderDecisionHistory,
     findQuoteRange: findQuoteRange,
     highlightQuoteHtml: highlightQuoteHtml,
+    dictionaryEntryForClaim: dictionaryEntryForClaim,
+    dictionaryBadgeHtml: dictionaryBadgeHtml,
+    DICTIONARY_ENTRIES: DICTIONARY_ENTRIES,
     VERDICT_STATUS: VERDICT_STATUS,
   };
   if (typeof module !== "undefined" && module.exports) {

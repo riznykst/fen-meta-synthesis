@@ -17,11 +17,15 @@ python scripts/start_demo.py        # Windows PowerShell: same command
 # or: bash scripts/demo_seed.sh
 ```
 
-Open **http://127.0.0.1:8082/web/portal/review.html**
+Open **http://127.0.0.1:8082/web/portal/demo.html** — the simplified
+one-screen demo (the full Review screen remains at `/web/portal/review.html`).
 
-The two pre-filled documents are a *synthetic demo example* (an invented
-trade-route story). Replace them with any two real sources to repeat the
-scenario on your own material — the workflow is dataset-agnostic.
+The pre-filled documents are a *synthetic demo example* (an invented
+trade-route story). The dataset switcher also offers **Sumerian dictionary
+entries (ePSD2)**: short verified dictionary excerpts for `lu`, `bahar`
+and `me` — labelled as excerpts, not corpus records and not gold data.
+Replace the documents with any real sources to repeat the scenario on
+your own material — the workflow is dataset-agnostic.
 
 ## 1. Analyse (45 seconds)
 
