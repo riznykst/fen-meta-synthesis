@@ -144,6 +144,59 @@ test("renderDecisionHistory: empty state and recorded decisions", () => {
   assert.match(html, /Accepted by a human reviewer/);
 });
 
+test("stepStates: empty session activates sources, rest idle", () => {
+  assert.deepStrictEqual(R.stepStates(null, [], 0),
+    { sources: "active", proposals: "idle", quoteCheck: "idle", decision: "idle" });
+});
+
+test("stepStates: docs done, analysis done, decisions done", () => {
+  const analysis = { provenance_check: { quotes_verified: 2, claims_total: 3 } };
+  assert.deepStrictEqual(R.stepStates(analysis, [{}, {}], 2),
+    { sources: "done", proposals: "done", quoteCheck: "done", decision: "done" });
+});
+
+test("stepStates: analysis without verified quotes keeps quote check active", () => {
+  const analysis = { provenance_check: { quotes_verified: 0, claims_total: 2 } };
+  const st = R.stepStates(analysis, [], 2);
+  assert.strictEqual(st.quoteCheck, "active");
+  assert.strictEqual(st.decision, "active");
+});
+
+test("orderItems: undecided proposals float up, decided sink, stable within groups", () => {
+  const items = [
+    { claim_id: "c1" }, { claim_id: "c2" }, { claim_id: "c3" },
+  ];
+  const decisions = [
+    { item_id: "c1", verdict: "accept", status: "accepted" },
+    { item_id: "c3", verdict: "dispute", status: "disputed" },
+  ];
+  const ordered = R.orderItems(items, decisions, (c) => c.claim_id);
+  assert.deepStrictEqual(ordered.map((c) => c.claim_id), ["c2", "c1", "c3"]);
+  assert.deepStrictEqual(items.map((c) => c.claim_id), ["c1", "c2", "c3"]); // input untouched in order
+});
+
+test("renderQuoteCheck: progress counts and jump links for unverified open items", () => {
+  const claims = [VERIFIED, UNVERIFIED];
+  const html = R.renderQuoteCheck(claims, [], {}, []);
+  assert.match(html, /Quotes verified <b>1\/2<\/b>/);
+  assert.match(html, /Needs attention \(1\)/);
+  assert.match(html, /data-action="jump" data-item="c2"/);
+  const clean = R.renderQuoteCheck([VERIFIED], [], {}, []);
+  assert.match(clean, /Nothing needs attention/);
+});
+
+test("reviewerOptions: voters first, then free default names, no duplicates", () => {
+  assert.deepStrictEqual(R.reviewerOptions([]), ["reviewer-1", "reviewer-2", "reviewer-3"]);
+  assert.deepStrictEqual(
+    R.reviewerOptions([{ reviewer: "boris" }, { reviewer: "ana" }, { reviewer: "boris" }]),
+    ["boris", "ana", "reviewer-1", "reviewer-2", "reviewer-3"]
+  );
+  assert.deepStrictEqual(
+    R.reviewerOptions([{ reviewer: "reviewer-2" }]),
+    ["reviewer-2", "reviewer-1", "reviewer-3"]
+  );
+});
+
 test("errorMessage: 502 is understandable and non-technical first", () => {
   const msg = R.errorMessage(502);
   assert.match(msg, /model did not respond/i);

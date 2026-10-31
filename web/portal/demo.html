@@ -12,12 +12,30 @@
   header .sub { font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:#6b6560; }
   .model { display:inline-block; margin-top:10px; font-size:11px; background:#e8eff7; color:#2d5a8e; border:1px solid #2d5a8e44; padding:5px 12px; border-radius:999px; }
   .steps { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin:16px 0 20px; }
-  .step { font-size:11px; font-weight:800; letter-spacing:.04em; background:#fff; border:1px solid #2d5a8e44; color:#2d5a8e; border-radius:999px; padding:8px 14px; box-shadow:0 1px 2px rgba(28,27,31,.06); }
-  .step:first-child { background:#2d5a8e; color:#fff; border-color:#2d5a8e; }
+  .step { position:relative; display:inline-flex; align-items:center; gap:8px; font-size:11px; font-weight:800; letter-spacing:.04em; background:#fff; border:1px solid #2d5a8e44; color:#2d5a8e; border-radius:999px; padding:8px 14px; box-shadow:0 1px 2px rgba(28,27,31,.06); cursor:pointer; font-family:inherit; transition:box-shadow .15s ease, transform .1s ease, background .15s ease; }
+  .step:hover { box-shadow:0 3px 8px rgba(28,27,31,.12); transform:translateY(-1px); }
+  .step:focus-visible { outline:2px solid #2d5a8e; outline-offset:2px; }
+  .step[data-state="done"] { background:#e2f3ea; border-color:#2e7d5b66; color:#1f6e4e; }
+  .step[data-state="active"] { background:#2d5a8e; border-color:#2d5a8e; color:#fff; }
+  .step .dot { width:11px; height:11px; border-radius:50%; border:2px solid currentColor; flex:0 0 auto; box-sizing:border-box; background:transparent; }
+  .step[data-state="done"] .dot { background:currentColor; }
+  .step[data-state="active"] .dot { background:#ffe58a; border-color:#ffe58a; animation:pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.45; } }
+  .step .tip { display:none; position:absolute; top:calc(100% + 8px); left:50%; transform:translateX(-50%); width:250px; background:#1c1b1f; color:#fdfcfa; font-weight:400; font-size:11.5px; line-height:1.5; letter-spacing:0; text-transform:none; border-radius:10px; padding:10px 12px; z-index:20; box-shadow:0 6px 18px rgba(28,27,31,.25); text-align:left; }
+  .step .tip b { display:block; margin-bottom:2px; font-size:12px; }
+  .step:hover .tip, .step:focus-visible .tip, .step:focus-within .tip { display:block; }
+  .step .tip::before { content:""; position:absolute; top:-5px; left:50%; margin-left:-5px; border:5px solid transparent; border-top:none; border-bottom-color:#1c1b1f; }
+  .panel.flash { animation:flash 1.4s ease; }
+  @keyframes flash { 0%,60% { box-shadow:0 0 0 3px #ffe58a; } 100% { box-shadow:none; } }
+  article.item.flash { animation:flash 1.4s ease; }
   .panel { background:#fdfcfa; border:1.5px solid #2d5a8e; border-radius:16px; padding:18px; margin-bottom:16px; }
   .panel h2 { font-family:Georgia,serif; font-size:19px; font-weight:400; margin:0 0 6px; }
   .lbl { display:block; font-size:10px; letter-spacing:.09em; text-transform:uppercase; color:#6b6560; font-weight:600; margin:10px 0 3px; }
-  input, textarea { width:100%; border:1px solid #e3ded2; border-radius:6px; padding:9px 10px; font-family:system-ui,sans-serif; font-size:13px; color:#1c1b1f; background:#fff; box-sizing:border-box; outline:none; }
+  input, textarea, select { width:100%; border:1px solid #e3ded2; border-radius:6px; padding:9px 10px; font-family:system-ui,sans-serif; font-size:13px; color:#1c1b1f; background:#fff; box-sizing:border-box; outline:none; }
+  .reviewer-row { display:flex; gap:8px; }
+  .reviewer-row select { flex:1 1 auto; min-height:44px; cursor:pointer; }
+  #reviewerNew { flex:1 1 auto; display:none; }
+  #reviewerNew.open { display:block; }
   textarea { min-height:76px; resize:vertical; }
   .btn { width:100%; min-height:46px; padding:11px 0; border-radius:9px; border:none; background:#2d5a8e; color:#fff; font-weight:700; font-size:13.5px; cursor:pointer; margin-top:14px; transition:background .15s ease, transform .1s ease; }
   .btn:hover { background:#244a78; }
@@ -83,15 +101,15 @@
     <h1>FEN × Meta — Human-Governed AI Synthesis</h1>
     <div class="sub">AI proposes · human decides · every decision keeps its provenance</div>
     <span class="model">Meta Model API · muse-spark-1.3 · via local backend</span>
-    <div class="steps" aria-label="Workflow steps">
-      <span class="step">1 · Sources</span>
-      <span class="step">2 · Model proposals</span>
-      <span class="step">3 · Quote check</span>
-      <span class="step">4 · Your decision</span>
+    <div class="steps" aria-label="Workflow steps — click a step to jump to its section">
+      <button class="step" type="button" data-target="panel-sources" data-state="active" aria-describedby="tip-step-1"><span class="dot" aria-hidden="true"></span><span>1 · Sources</span><span class="tip" id="tip-step-1" role="tooltip"><b>1 · Sources — what the model may read</b>Up to 3 documents, 30 000 characters in total. Nothing leaves your browser until you click Analyse. Switch presets or upload your own files.</span></button>
+      <button class="step" type="button" data-target="panel-proposals" data-state="idle" aria-describedby="tip-step-2"><span class="dot" aria-hidden="true"></span><span>2 · Model proposals</span><span class="tip" id="tip-step-2" role="tooltip"><b>2 · Model proposals — Muse Spark 1.3 suggests</b>Claims with verbatim quotes via schema-constrained structured output. Every item stays a proposal — the model approves nothing.</span></button>
+      <button class="step" type="button" data-target="panel-quotes" data-state="idle" aria-describedby="tip-step-3"><span class="dot" aria-hidden="true"></span><span>3 · Quote check</span><span class="tip" id="tip-step-3" role="tooltip"><b>3 · Quote check — code, not the model</b>Each quote is located in its source document. Unverified quotes turn red and cannot be accepted — the button is disabled and the API refuses with 409.</span></button>
+      <button class="step" type="button" data-target="panel-decision" data-state="idle" aria-describedby="tip-step-4"><span class="dot" aria-hidden="true"></span><span>4 · Your decision</span><span class="tip" id="tip-step-4" role="tooltip"><b>4 · Your decision — humans decide together</b>Distinct reviewers vote; consensus needs at least 2 reviewers plus a majority. Accepted items land in the Registry with full provenance.</span></button>
     </div>
   </header>
 
-  <section class="panel" aria-label="Sources">
+  <section class="panel" id="panel-sources" aria-label="Sources">
     <h2>1 · Sources</h2>
     <div class="datasets" role="group" aria-label="Dataset">
       <button class="dataset-btn active" id="dataset-synthetic" type="button">Demo (synthetic)</button>
@@ -104,9 +122,11 @@
       <div class="meta" style="margin-top:7px">…or drag &amp; drop .txt / .md / .json files here (up to 3 documents, 30 000 characters total). Files are read in your browser and sent to the model only when you click Analyse.</div>
       <div class="meta" id="uploadNote" role="status"></div>
     </div>
-    <label class="lbl" for="reviewer">Reviewer name (recorded with every decision — pick a voter or type a new name)</label>
-    <input id="reviewer" value="reviewer-1" list="reviewerList" autocomplete="off">
-    <datalist id="reviewerList"></datalist>
+    <label class="lbl" for="reviewer">Reviewer — who is voting (recorded with every decision)</label>
+    <div class="reviewer-row">
+      <select id="reviewer" aria-label="Reviewer name"></select>
+      <input id="reviewerNew" placeholder="New reviewer name…" aria-label="New reviewer name" autocomplete="off">
+    </div>
     <label class="lbl" for="doc1Title">Document 1 title</label>
     <input id="doc1Title" value="Local oral tradition">
     <label class="lbl" for="doc1">Document 1 text</label>
@@ -128,13 +148,18 @@
     <p class="meta" id="analysisMeta"></p>
   </section>
 
-  <section class="panel" aria-label="Proposals">
-    <h2>2–3 · Model proposals &amp; quote check</h2>
+  <section class="panel" id="panel-proposals" aria-label="Proposals">
+    <h2>2 · Model proposals</h2>
     <div id="sharedThread" class="shared-thread"><span id="sharedThreadText">Shared thread: checking the server for an existing analysis…</span> <button class="decision-btn prov" id="refreshThread" type="button" style="flex:0 1 auto;min-height:36px;padding:6px 14px">↻ Refresh</button> <button class="decision-btn prov" id="resetBase" type="button" style="flex:0 1 auto;min-height:36px;padding:6px 14px">Reset API to localhost:8100</button></div>
-    <div id="proposals"><p class="note">No proposals yet — analyse documents first. Every item stays a proposal until you decide.</p></div>
+    <div id="proposals"><p class="note">No proposals yet — analyse documents first. Every item stays a proposal until you decide. Decided items sink below; open ones stay on top.</p></div>
   </section>
 
-  <section class="panel" aria-label="Decision and provenance">
+  <section class="panel" id="panel-quotes" aria-label="Quote check">
+    <h2>3 · Quote check</h2>
+    <div id="quoteCheck"><p class="note">No analysis yet — verification progress will appear here.</p></div>
+  </section>
+
+  <section class="panel" id="panel-decision" aria-label="Decision and provenance">
     <h2>4 · Your decision &amp; provenance</h2>
     <div id="sourceView"><p class="note">Select “Show in source” on a proposal to see its quote highlighted in the source document.</p></div>
     <div id="provenance"><p class="note">Select “Provenance” on a proposal to see document → quote → model proposal → decisions.</p></div>
@@ -154,7 +179,7 @@
 <script src="/web/shared/escape.js?v=2"></script>
 <script src="/web/shared/api-base.js?v=2"></script>
 <script src="/web/shared/theme.js?v=2"></script>
-<script src="/web/portal/review.js?v=2"></script>
+<script src="/web/portal/review.js?v=5"></script>
 <script src="/web/portal/demo.js?v=2"></script>
 </body>
 </html>

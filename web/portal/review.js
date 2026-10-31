@@ -302,8 +302,12 @@
     errorMessage: errorMessage,
     renderClaimCard: renderClaimCard,
     renderContradictionCard: renderContradictionCard,
+    stepStates: stepStates,
     consensusFor: consensusFor,
     renderConsensusHtml: renderConsensusHtml,
+    orderItems: orderItems,
+    renderQuoteCheck: renderQuoteCheck,
+    reviewerOptions: reviewerOptions,
     renderDecisionHistory: renderDecisionHistory,
     findQuoteRange: findQuoteRange,
     highlightQuoteHtml: highlightQuoteHtml,
@@ -347,16 +351,127 @@
     if (btn) btn.disabled = !!text;
   }
 
+  // Stepper (demo header): pure status derivation so it is unit-testable.
+  // done / active / idle per step. Step 1 is done once documents exist;
+  // steps 2–4 follow the shared analysis/decisions state.
+  function stepStates(analysis, decisions, docCount) {
+    var hasDocs = (docCount || 0) > 0;
+    var hasAnalysis = !!analysis;
+    var pc = (analysis && analysis.provenance_check) || {};
+    var votes = (decisions || []).length;
+    return {
+      sources: hasDocs || hasAnalysis ? "done" : "active",
+      proposals: hasAnalysis ? "done" : (hasDocs ? "active" : "idle"),
+      quoteCheck: !hasAnalysis ? "idle" : ((pc.quotes_verified || 0) > 0 ? "done" : "active"),
+      decision: votes > 0 ? "done" : (hasAnalysis ? "active" : "idle"),
+    };
+  }
+
+  function docCount() {
+    var n = 0;
+    [1, 2, 3].forEach(function (i) {
+      var f = $("doc" + i);
+      if (f && f.value && f.value.trim()) n += 1;
+    });
+    if (!n && state.documents && state.documents.length) n = state.documents.length;
+    return n;
+  }
+
+  function updateSteps() {
+    var steps = document.querySelectorAll(".steps .step[data-target]");
+    if (!steps.length) return;
+    var st = stepStates(state.analysis, state.decisions, docCount());
+    var map = { "panel-sources": st.sources, "panel-proposals": st.proposals, "panel-quotes": st.quoteCheck, "panel-decision": st.decision };
+    steps.forEach(function (el) {
+      var key = el.dataset.target;
+      var value = map[key];
+      if (value) el.dataset.state = value;
+    });
+  }
+
+  function initStepper() {
+    document.querySelectorAll(".steps .step[data-target]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        var panel = document.getElementById(el.dataset.target);
+        if (!panel) return;
+        panel.classList.remove("collapsed");
+        panel.scrollIntoView({ behavior: "smooth", block: "start" });
+        panel.classList.remove("flash");
+        void panel.offsetWidth; // restart the highlight animation
+        panel.classList.add("flash");
+      });
+    });
+    ["doc1", "doc2", "doc3"].forEach(function (id) {
+      var f = $(id);
+      if (f) f.addEventListener("input", updateSteps);
+    });
+  }
+
+  // Dynamic ordering: undecided proposals float up, decided items sink
+  // to the bottom — after every vote the open work stays on top. Stable:
+  // items keep their relative order within each group. Pure (testable).
+  function orderItems(items, decisions, idOf) {
+    var list = (items || []).slice();
+    list.forEach(function (it, i) { it.__pos = i; });
+    list.sort(function (a, b) {
+      var da = itemStatus(idOf(a), decisions) !== "proposed" ? 1 : 0;
+      var db = itemStatus(idOf(b), decisions) !== "proposed" ? 1 : 0;
+      return (da - db) || (a.__pos - b.__pos);
+    });
+    list.forEach(function (it) { delete it.__pos; });
+    return list;
+  }
+
+  // Quote-check panel (section 3): verification progress plus the items
+  // still needing attention, each with a jump link to its card. Pure.
+  function renderQuoteCheck(claims, contras, byId, decisions) {
+    claims = claims || [];
+    var total = claims.length;
+    var verified = claims.filter(function (c) { return canAccept(c); }).length;
+    var open = orderItems(claims, decisions, function (c) { return c.claim_id; })
+      .filter(function (c) { return itemStatus(c.claim_id, decisions) === "proposed"; });
+    var unverified = open.filter(function (c) { return !canAccept(c); });
+    var html = '<p class="meta">Quotes verified <b>' + verified + "/" + total + "</b>"
+      + " — checked by code against the source documents, not trusted from the model.</p>";
+    if (!unverified.length) {
+      html += '<p class="note">Nothing needs attention — every open proposal has a verified quote.</p>';
+    } else {
+      html += '<p class="meta">Needs attention (' + unverified.length + "):</p>"
+        + unverified.map(function (c) {
+          return '<div class="history-item">'
+            + '<span class="badge b-rd">Quote NOT verified</span> '
+            + "<b>" + esc(c.claim_id) + "</b> · " + esc(formatQuote(c.quote, 90))
+            + ' <button class="decision-btn prov" data-action="jump" data-item="' + esc(c.claim_id) + '"'
+            + ' type="button" style="flex:0 1 auto;min-height:32px;padding:4px 12px">Go to card →</button></div>';
+        }).join("");
+    }
+    return html;
+  }
+
+  function jumpToCard(itemId) {
+    var card = document.querySelector('article[data-item="' + itemId + '"]');
+    if (!card) return;
+    card.classList.remove("collapsed");
+    card.scrollIntoView({ behavior: "smooth", block: "center" });
+    card.classList.remove("flash");
+    void card.offsetWidth;
+    card.classList.add("flash");
+  }
+
   function renderAll() {
     var box = $("proposals");
-    if (!state.analysis) { box.innerHTML = ""; return; }
+    if (!state.analysis) { box.innerHTML = ""; var qc0 = $("quoteCheck"); if (qc0) qc0.innerHTML = ""; updateSteps(); return; }
     var claims = state.analysis.analysis.claims || [];
     var contras = state.analysis.analysis.contradictions || [];
     var byId = {};
     claims.forEach(function (c) { byId[c.claim_id] = c; });
+    var orderedClaims = orderItems(claims, state.decisions, function (c) { return c.claim_id; });
+    var orderedContras = orderItems(contras, state.decisions, function (x) { return x.contradiction_id; });
     box.innerHTML =
-      claims.map(function (c) { return renderClaimCard(c, state.decisions); }).join("")
-      + contras.map(function (x) { return renderContradictionCard(x, byId, state.decisions); }).join("");
+      orderedClaims.map(function (c) { return renderClaimCard(c, state.decisions); }).join("")
+      + orderedContras.map(function (x) { return renderContradictionCard(x, byId, state.decisions); }).join("");
+    var qc = $("quoteCheck");
+    if (qc) qc.innerHTML = renderQuoteCheck(claims, orderedContras, byId, state.decisions);
     $("history").innerHTML = renderDecisionHistory(state.decisions);
     var pc = state.analysis.provenance_check || {};
     $("analysisMeta").textContent =
@@ -364,6 +479,7 @@
       ((state.analysis.model || {}).returned || (state.analysis.model || {}).requested || "") +
       " · quotes verified " + (pc.quotes_verified || 0) + "/" + (pc.claims_total || 0) +
       " · all items are proposals until you decide";
+    updateSteps();
   }
 
   // Shared thread: analyses and decisions live on the server, so a second
@@ -420,19 +536,56 @@
     } catch (e) { /* server blip: keep current view */ }
   }
 
-  // Participant identities (demo-scope): a datalist of every reviewer who
-  // has voted, so a second participant can pick an existing name or type a
-  // new one. Identity is a free-text name recorded with each decision — a
-  // demo stand-in, not a verified account (ADR-005 production identity is
-  // out of scope).
+  // Participant identities (demo-scope): a dropdown of every reviewer
+  // who has voted, so a second participant picks a name instead of typing
+  // one — no manual entry needed. The "+ New reviewer…" option reveals a
+  // small field for a first-time name. Identity is a free-text name
+  // recorded with each decision — a demo stand-in, not a verified account
+  // (ADR-005 production identity is out of scope). Pure name-list builder
+  // is unit-testable; DOM sync below uses it.
+  var NEW_REVIEWER = "__new__";
+
+  function reviewerOptions(decisions) {
+    var names = [];
+    (decisions || []).forEach(function (d) {
+      if (d.reviewer && names.indexOf(d.reviewer) < 0) names.push(d.reviewer);
+    });
+    ["reviewer-1", "reviewer-2", "reviewer-3"].forEach(function (n) {
+      if (names.indexOf(n) < 0) names.push(n);
+    });
+    return names;
+  }
+
+  function reviewerName() {
+    var sel = $("reviewer");
+    if (!sel) return "";
+    if (sel.value === NEW_REVIEWER) {
+      var field = $("reviewerNew");
+      return field ? field.value.trim() : "";
+    }
+    return (sel.value || "").trim();
+  }
+
   function syncReviewerChoices() {
-    var list = $("reviewerList");
-    if (!list) return;
-    var names = {};
-    (state.decisions || []).forEach(function (d) { if (d.reviewer) names[d.reviewer] = true; });
-    list.innerHTML = Object.keys(names).map(function (n) {
-      return '<option value="' + esc(n) + '"></option>';
+    var sel = $("reviewer");
+    if (!sel) return;
+    var keep = sel.value && sel.value !== NEW_REVIEWER ? sel.value : reviewerName() || null;
+    var html = reviewerOptions(state.decisions).map(function (n) {
+      return '<option value="' + esc(n) + '"' + (n === keep ? " selected" : "") + ">" + esc(n) + "</option>";
     }).join("");
+    html += '<option value="' + NEW_REVIEWER + '">＋ New reviewer…</option>';
+    sel.innerHTML = html;
+    if (!keep && sel.options.length) sel.selectedIndex = 0;
+    toggleReviewerNew();
+  }
+
+  function toggleReviewerNew() {
+    var sel = $("reviewer");
+    var field = $("reviewerNew");
+    if (!sel || !field) return;
+    var isNew = sel.value === NEW_REVIEWER;
+    field.classList.toggle("open", isNew);
+    if (isNew) field.focus();
   }
 
   function initCollapsiblePanels() {
@@ -474,6 +627,13 @@
   async function decide(itemId, itemType, verdict) {
     if (!state.analysis) return;
     var commentEl = $("comment-" + itemId);
+    var reviewer = reviewerName();
+    if (!reviewer) {
+      $("reviewError").textContent = "Pick your reviewer name from the dropdown — or choose ＋ New reviewer… and type it — before voting.";
+      var sel = $("reviewer");
+      if (sel) sel.focus();
+      return;
+    }
     try {
       var resp = await apiFetch("/decisions", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -483,16 +643,23 @@
           item_type: itemType,
           verdict: verdict,
           comment: commentEl ? commentEl.value.trim() : "",
-          reviewer: ($("reviewer").value.trim() || "reviewer-1"),
+          reviewer: reviewer,
         }),
       });
       state.decisions.push({
         decision_id: resp.decision_id, recorded_at: resp.recorded_at,
         item_id: itemId, verdict: verdict, status: VERDICT_STATUS[verdict],
-        reviewer: ($("reviewer").value.trim() || "reviewer-1"),
+        reviewer: reviewer,
         comment: commentEl ? commentEl.value.trim() : "",
       });
       syncReviewerChoices();
+      var sel = $("reviewer");
+      if (sel) {
+        sel.value = reviewer; // keep a just-registered name selected
+        toggleReviewerNew();
+      }
+      var nf = $("reviewerNew");
+      if (nf) nf.value = "";
       $("reviewError").textContent = "";
       renderAll();
     } catch (e) {
@@ -564,6 +731,11 @@
     if (!$("analyzeBtn")) return;
     $("analyzeBtn").addEventListener("click", runAnalyze);
     initCollapsiblePanels();
+    initStepper();
+    updateSteps();
+    syncReviewerChoices(); // voters dropdown works even before any vote
+    var reviewerSel = $("reviewer");
+    if (reviewerSel) reviewerSel.addEventListener("change", toggleReviewerNew);
     var refresh = $("refreshThread");
     if (refresh) refresh.addEventListener("click", function () { loadSharedThread(); });
     var reset = $("resetBase");
@@ -593,6 +765,7 @@
       if (btn.dataset.action === "decide") decide(btn.dataset.item, btn.dataset.type, btn.dataset.verdict);
       if (btn.dataset.action === "provenance") showProvenance(btn.dataset.item);
       if (btn.dataset.action === "highlight") showInSource(btn.dataset.item);
+      if (btn.dataset.action === "jump") jumpToCard(btn.dataset.item);
       if (btn.dataset.action === "export") downloadRecord(btn.dataset.item);
     });
   });
