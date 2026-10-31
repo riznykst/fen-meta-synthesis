@@ -175,14 +175,14 @@ only as a stand-in.
 | Live call to the Meta Model API through FEN | Done — verified live on 2026-10-28 (`muse-spark-1.3`); artifacts local pending human-reviewed commit |
 | `POST /analyze` endpoint | Done |
 | Review screen | Done |
-| Decision recording and provenance endpoint | Done (demo-scope in-memory registry) |
+| Decision recording and provenance endpoint | Done (JSONL-persistent demo registry via `start_demo.py`; in-memory otherwise) |
 | Evaluation harness and B0 baseline | Done |
 | Evaluation on the human-labelled corpus; Baseten B1 comparison | Planned — awaiting dataset (T8) and provider access |
 
 This table is updated with every task commit. Nothing is listed as done
-without a test or a reproducible run. Current suites on this branch:
-**190 pytest + 35 Node tests + Playwright Review e2e**, all passing
-(baseline was 125 + 18).
+without a test or a reproducible run. Current suites in this repository:
+**199 pytest + 54 Node tests + Playwright e2e (Review, Demo, Candidate)**,
+all passing (baseline was 125 + 18).
 
 ## Before vs. during the hackathon
 
@@ -303,10 +303,10 @@ docs/                   ADRs, provider notes
   punctuation-sensitive in its exact form (a token-overlap rule is used
   only for evaluation matching).
 - Voting and reputation mechanisms from the baseline remain simulated.
-- The hackathon decision registry is an in-memory demo store (process
-  lifetime), and decisions are published to a demo event log / injectable
-  publisher — wiring them into the Kafka governance pipeline is not
-  claimed.
+- The hackathon decision registry is a demo-scope JSONL store when
+  launched via `scripts/start_demo.py` (in-memory otherwise), and
+  decisions are published to a demo event log / injectable publisher —
+  wiring them into the Kafka governance pipeline is not claimed.
 - Live-response artifacts are kept local until a human reviews them for
   commit.
 
