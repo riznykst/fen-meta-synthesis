@@ -11,6 +11,10 @@
   header h1 { font-family:Georgia,serif; font-size:21px; margin:0 0 4px; color:#1c1b1f; font-weight:400; }
   header .sub { font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:#6b6560; }
   header .switch { display:inline-block; margin-top:10px; font-size:11px; color:#2d5a8e; border:1px solid #2d5a8e55; border-radius:999px; padding:4px 12px; text-decoration:none; background:#fff; }
+  .mainnav { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin:12px 0 4px; }
+  .mainnav a { display:inline-flex; align-items:center; min-height:28px; padding:4px 12px; font-size:11px; color:#2d5a8e; border:1px solid #2d5a8e55; border-radius:999px; text-decoration:none; background:#fff; }
+  .mainnav a:hover { background:#e8eff7; }
+  .mainnav a[aria-current="page"] { background:#2d5a8e; border-color:#2d5a8e; color:#fff; font-weight:700; }
   .banner { max-width:760px; margin:0 auto 18px; background:#faf3e0; border:1px dashed #c9a35f; border-radius:8px; padding:8px 12px; font-size:12px; color:#5c4a10; text-align:center; }
   .cols { display:flex; gap:28px; flex-wrap:wrap; justify-content:center; align-items:flex-start; }
   .card { position:relative; width:340px; flex-shrink:0; }
@@ -61,8 +65,13 @@
   <header>
     <h1>Validation Commons</h1>
     <div class="sub">Triadic Synthesis Framework · Live Prototype · any dataset type</div>
-    <a class="switch" href="/web/portal/index.html">← Classic view (candidates &amp; table)</a>
-    <a class="switch" href="/web/portal/review.html">Review — Meta demo (AI proposes, human decides) →</a>
+    <nav class="mainnav" aria-label="Main navigation">
+      <a href="/web/portal/demo.html" title="Simplified one-screen demo">Demo</a>
+      <a href="/web/portal/review.html" title="Full Review screen">Review</a>
+      <a href="/web/portal/index.html" title="Candidates &amp; community voting">Candidates</a>
+      <a href="/web/portal/triadic.html" aria-current="page" title="Triadic view (Scaffold → Consensus → Registry)">Triadic</a>
+      <a href="/web/portal/faq.html" title="User Wiki &amp; FAQ — what every button means">Wiki &amp; FAQ</a>
+    </nav>
   </header>
   <div class="banner" id="modeBanner" style="display:none"></div>
 

@@ -42,6 +42,10 @@
   .exports { white-space:nowrap; }
   .exp { color:var(--accent); text-decoration:none; border:1px solid var(--chipline); border-radius:999px; padding:2px 8px; margin:1px 3px 1px 0; font-size:11px; display:inline-block; }
   .exp:hover { border-color:var(--accent); }
+  .mainnav { display:flex; flex-wrap:wrap; gap:6px; margin:8px 0 12px; }
+  .mainnav a { display:inline-flex; align-items:center; min-height:28px; padding:4px 12px; font-size:11px; color:var(--accent); border:1px solid var(--chipline); border-radius:999px; text-decoration:none; background:#fff; }
+  .mainnav a:hover { background:#e8eff7; }
+  .mainnav a[aria-current="page"] { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:700; }
   /* ---- Mobile-first (min-width = desktop enhancements) ---- */
   .table-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
   input, select, button { font-size:16px; }  /* prevents iOS auto-zoom */
@@ -69,7 +73,14 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>FEN — Community DAO portal <span class="note">(Flow 1 · demo against mock_fen_api)</span> <a href="/web/portal/triadic.html" style="font-size:12px;color:var(--green)">⇄ Triadic view</a> <a href="/web/portal/review.html" style="font-size:12px;color:var(--green)">⇄ Review — Meta demo (AI proposes, human decides)</a></h1>
+  <h1>FEN — Community DAO portal <span class="note">(Flow 1 · demo against mock_fen_api)</span></h1>
+  <nav class="mainnav" aria-label="Main navigation">
+    <a href="/web/portal/demo.html" title="Simplified one-screen demo">Demo</a>
+    <a href="/web/portal/review.html" title="Full Review screen">Review</a>
+    <a href="/web/portal/index.html" aria-current="page" title="Candidates &amp; community voting">Candidates</a>
+    <a href="/web/portal/triadic.html" title="Triadic view (Scaffold → Consensus → Registry)">Triadic</a>
+    <a href="/web/portal/faq.html" title="User Wiki &amp; FAQ — what every button means">Wiki &amp; FAQ</a>
+  </nav>
 
   <div class="grid">
     <div class="card">

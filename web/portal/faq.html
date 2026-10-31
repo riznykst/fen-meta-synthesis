@@ -11,6 +11,10 @@
   header h1 { font-family:Georgia,serif; font-size:24px; margin:0 0 4px; font-weight:400; }
   header .sub { font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:#6b6560; }
   header .switch, .toc a { display:inline-block; margin:6px 3px 0; font-size:11px; color:#2d5a8e; border:1px solid #2d5a8e55; border-radius:999px; padding:5px 12px; text-decoration:none; background:#fff; }
+  .mainnav { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin:12px 0 4px; }
+  .mainnav a { display:inline-flex; align-items:center; min-height:28px; padding:5px 12px; font-size:11px; color:#2d5a8e; border:1px solid #2d5a8e55; border-radius:999px; text-decoration:none; background:#fff; }
+  .mainnav a:hover { background:#e8eff7; }
+  .mainnav a[aria-current="page"] { background:#2d5a8e; border-color:#2d5a8e; color:#fff; font-weight:700; }
   .panel { background:#fdfcfa; border:1.5px solid #2d5a8e; border-radius:16px; padding:20px 18px; margin-bottom:16px; }
   .panel h2 { font-family:Georgia,serif; font-size:20px; font-weight:400; margin:0 0 8px; }
   .panel h3 { font-family:Georgia,serif; font-weight:400; margin:16px 0 6px; }
@@ -33,9 +37,13 @@
   <header>
     <h1>User Wiki &amp; FAQ</h1>
     <div class="sub">FEN × Meta · AI proposes · humans decide · every decision keeps its provenance</div>
-    <a class="switch" href="/web/portal/demo.html">← Simplified demo</a>
-    <a class="switch" href="/web/portal/review.html">Full Review</a>
-    <a class="switch" href="/web/portal/index.html">Candidates &amp; voting</a>
+    <nav class="mainnav" aria-label="Main navigation">
+      <a href="/web/portal/demo.html" title="Simplified one-screen demo">Demo</a>
+      <a href="/web/portal/review.html" title="Full Review screen">Review</a>
+      <a href="/web/portal/index.html" title="Candidates &amp; community voting">Candidates</a>
+      <a href="/web/portal/triadic.html" title="Triadic view (Scaffold → Consensus → Registry)">Triadic</a>
+      <a href="/web/portal/faq.html" aria-current="page" title="User Wiki &amp; FAQ — what every button means">Wiki &amp; FAQ</a>
+    </nav>
   </header>
 
   <nav class="panel toc" aria-label="Contents">

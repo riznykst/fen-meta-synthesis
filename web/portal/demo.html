@@ -11,6 +11,10 @@
   header h1 { font-family:Georgia,serif; font-size:27px; margin:0 0 6px; font-weight:400; letter-spacing:-.01em; }
   header .sub { font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:#6b6560; }
   .model { display:inline-block; margin-top:10px; font-size:11px; background:#e8eff7; color:#2d5a8e; border:1px solid #2d5a8e44; padding:5px 12px; border-radius:999px; }
+  .mainnav { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin:12px 0 4px; }
+  .mainnav a { display:inline-flex; align-items:center; min-height:28px; padding:5px 12px; font-size:11px; color:#2d5a8e; border:1px solid #2d5a8e55; border-radius:999px; text-decoration:none; background:#fff; }
+  .mainnav a:hover { background:#e8eff7; }
+  .mainnav a[aria-current="page"] { background:#2d5a8e; border-color:#2d5a8e; color:#fff; font-weight:700; }
   .steps { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin:16px 0 20px; }
   .step { position:relative; display:inline-flex; align-items:center; gap:8px; font-size:11px; font-weight:800; letter-spacing:.04em; background:#fff; border:1px solid #2d5a8e44; color:#2d5a8e; border-radius:999px; padding:8px 14px; box-shadow:0 1px 2px rgba(28,27,31,.06); cursor:pointer; font-family:inherit; transition:box-shadow .15s ease, transform .1s ease, background .15s ease; }
   .step:hover { box-shadow:0 3px 8px rgba(28,27,31,.12); transform:translateY(-1px); }
@@ -101,6 +105,13 @@
     <h1>FEN × Meta — Human-Governed AI Synthesis</h1>
     <div class="sub">AI proposes · human decides · every decision keeps its provenance</div>
     <span class="model">Meta Model API · muse-spark-1.3 · via local backend</span>
+    <nav class="mainnav" aria-label="Main navigation">
+      <a href="/web/portal/demo.html" aria-current="page" title="Simplified one-screen demo">Demo</a>
+      <a href="/web/portal/review.html" title="Full Review screen">Review</a>
+      <a href="/web/portal/index.html" title="Candidates &amp; community voting">Candidates</a>
+      <a href="/web/portal/triadic.html" title="Triadic view (Scaffold → Consensus → Registry)">Triadic</a>
+      <a href="/web/portal/faq.html" title="User Wiki &amp; FAQ — what every button means">Wiki &amp; FAQ</a>
+    </nav>
     <div class="steps" aria-label="Workflow steps — click a step to jump to its section">
       <button class="step" type="button" data-target="panel-sources" data-state="active" aria-describedby="tip-step-1"><span class="dot" aria-hidden="true"></span><span>1 · Sources</span><span class="tip" id="tip-step-1" role="tooltip"><b>1 · Sources — what the model may read</b>Up to 3 documents, 30 000 characters in total. Nothing leaves your browser until you click Analyse. Switch presets or upload your own files.</span></button>
       <button class="step" type="button" data-target="panel-proposals" data-state="idle" aria-describedby="tip-step-2"><span class="dot" aria-hidden="true"></span><span>2 · Model proposals</span><span class="tip" id="tip-step-2" role="tooltip"><b>2 · Model proposals — Muse Spark 1.3 suggests</b>Claims with verbatim quotes via schema-constrained structured output. Every item stays a proposal — the model approves nothing.</span></button>
