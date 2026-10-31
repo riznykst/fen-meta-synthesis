@@ -95,7 +95,8 @@ the `baseline-pre-hackathon` tag in this repository
 
 ## 3-Minute Demo Video
 
-<YouTube URL — script: VIDEO_SCRIPT.md. The video must be understandable
+<YouTube URL — the final video script is kept locally by the owner and
+is intentionally not part of this repository. The video must be understandable
 without running anything: problem → live analysis → caught fabricated
 quote → human decision → provenance chain → metrics.>
 
