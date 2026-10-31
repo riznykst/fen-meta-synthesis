@@ -29,7 +29,15 @@
       if (global.location && global.location.search) search = global.location.search;
       storage = global.localStorage || null;
     } catch (e) { /* opaque origin */ }
-    return { search: search, storage: storage };
+    // Optional build-time defaults (web/shared/supabase-config.js): the
+    // publishable key is public by design; the service key must never be here.
+    var preset = global.FEN_SUPABASE_DEFAULT || null;
+    return {
+      search: search,
+      storage: storage,
+      defaultUrl: preset && preset.url ? preset.url : "",
+      defaultAnonKey: preset && preset.anonKey ? preset.anonKey : "",
+    };
   }
 
   function readParam(search, name) {
@@ -53,8 +61,13 @@
     if (anonKey && o.storage) { try { o.storage.setItem(KEY_KEY, anonKey); } catch (e) {} }
     if (!url && o.storage) { try { url = o.storage.getItem(URL_KEY); } catch (e) {} }
     if (!anonKey && o.storage) { try { anonKey = o.storage.getItem(KEY_KEY); } catch (e) {} }
-    if (!url) url = o.defaultUrl || "";
-    if (!anonKey) anonKey = o.defaultAnonKey || "";
+    // Shipped public defaults (web/shared/supabase-config.js), unless the
+    // caller passed explicit opts without them.
+    var preset = global.FEN_SUPABASE_DEFAULT || null;
+    if (!url && o.defaultUrl) url = o.defaultUrl;
+    if (!url && preset && preset.url) url = preset.url;
+    if (!anonKey && o.defaultAnonKey) anonKey = o.defaultAnonKey;
+    if (!anonKey && preset && preset.anonKey) anonKey = preset.anonKey;
     url = stripSlash(url);
     return { url: url, anonKey: anonKey || "", configured: !!(url && anonKey) };
   }

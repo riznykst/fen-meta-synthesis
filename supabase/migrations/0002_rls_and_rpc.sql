@@ -95,7 +95,9 @@ begin
     decision_id, analysis_fk, item_fk, verdict, status, reviewer, comment
   )
   values (
-    'dec_' || encode(gen_random_bytes(6), 'hex'),
+    -- gen_random_uuid() is core Postgres (13+); pgcrypto lives in the
+    -- `extensions` schema on Supabase, so it must not be relied on here.
+    'dec_' || substr(replace(gen_random_uuid()::text, '-', ''), 1, 12),
     v_analysis_id, v_item.id, p_verdict, v_status,
     btrim(p_reviewer), coalesce(p_comment, '')
   )

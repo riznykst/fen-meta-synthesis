@@ -39,6 +39,26 @@ test("config: falls back to localStorage, then unconfigured", () => {
   assert.deepStrictEqual(empty, { url: "", anonKey: "", configured: false });
 });
 
+test("config: uses the public runtime defaults when nothing else is set", () => {
+  globalThis.FEN_SUPABASE_DEFAULT = {
+    url: "https://default.supabase.co",
+    anonKey: "sb_publishable_default",
+  };
+  try {
+    const cfg = S.fenSupabaseConfig({ search: "", storage: null });
+    assert.strictEqual(cfg.url, "https://default.supabase.co");
+    assert.strictEqual(cfg.configured, true);
+    // query params still win over the defaults
+    const overridden = S.fenSupabaseConfig({
+      search: "?supabase_url=https://override.supabase.co&supabase_anon_key=k2",
+      storage: null,
+    });
+    assert.strictEqual(overridden.url, "https://override.supabase.co");
+  } finally {
+    delete globalThis.FEN_SUPABASE_DEFAULT;
+  }
+});
+
 test("headers carry apikey and bearer token", () => {
   const h = S.fenSupabaseHeaders({ url: "https://p.supabase.co", anonKey: "k" });
   assert.deepStrictEqual(h, {

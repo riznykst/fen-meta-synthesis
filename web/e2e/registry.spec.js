@@ -7,6 +7,10 @@ const CORS = { "Access-Control-Allow-Origin": "*" };
 const PAGE = "/web/portal/registry.html?supabase_url=https://demo.supabase.co&supabase_anon_key=sb_publishable_test";
 
 test("registry page explains missing configuration", async ({ page }) => {
+  // Neutralise the shipped public defaults so the unconfigured path is shown.
+  await page.route("**/shared/supabase-config.js*", (route) =>
+    route.fulfill({ status: 200, contentType: "application/javascript", body: "" })
+  );
   await page.goto("/web/portal/registry.html");
   await expect(page.locator("#state")).toContainText("not configured");
   await expect(page.locator("#state")).toContainText("publishable key");
