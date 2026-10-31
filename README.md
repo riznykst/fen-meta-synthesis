@@ -118,9 +118,8 @@ Requirements: Python 3.10+ (verified locally on 3.10.4), Node.js 22, and
 Docker only for the full pre-hackathon stack.
 
 ```bash
-git clone https://github.com/riznykst/fen-triadic-synthesis
-cd fen-triadic-synthesis
-git checkout hackathon/meta-ai-synthesis
+git clone https://github.com/riznykst/fen-meta-synthesis
+cd fen-meta-synthesis
 
 pip install -r requirements-common.txt
 python -m pytest -q

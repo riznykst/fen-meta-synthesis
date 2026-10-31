@@ -3,9 +3,10 @@
 Copy-paste source for the submission form at
 https://cerebralvalley.ai/e/meta-ai-developer-hackathon/hackathon/submit
 **Deadline: 4 November, 21:00 ET (= 5 November, 03:00 Berlin).**
-Submit on the `hackathon/meta-ai-synthesis` branch state; do not edit the
-texts below to claim more than HACKATHON.md records. Fields marked
-`<...>` must be filled by the owner before submitting.
+Submit on this repository's `main` state (migrated 2026-10-31 from the
+hackathon branch of the original FEN repository, history preserved); do
+not edit the texts below to claim more than HACKATHON.md records. Fields
+marked `<...>` must be filled by the owner before submitting.
 
 ---
 
@@ -69,11 +70,13 @@ fixture; 0% can be accepted with it).
 
 ## Public GitHub Repository
 
-https://github.com/riznykst/fen-triadic-synthesis/tree/hackathon/meta-ai-synthesis
+https://github.com/riznykst/fen-meta-synthesis
 
-(Link the hackathon branch, not the repository root: the default `main`
-branch is the pre-hackathon research prototype. The boundary between the
-two is recorded in HACKATHON.md and the `baseline-pre-hackathon` tag.)
+(This repository is the hackathon submission; it was migrated with full
+history from the hackathon branch of the original FEN repository on
+2026-10-31. The boundary between pre-existing work and hackathon work is
+the `baseline-pre-hackathon` tag in this repository
+(`git log baseline-pre-hackathon..main`) and HACKATHON.md.)
 
 ## 3-Minute Demo Video
 

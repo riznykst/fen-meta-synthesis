@@ -2,7 +2,12 @@
 
 Project: FEN Triadic Synthesis — Human-Governed AI Synthesis
 (Meta Global AI Developer Hackathon; submission deadline 4 November, 21:00 ET)
-Branch: `hackathon/meta-ai-synthesis` (never `main`)
+Repository: `riznykst/fen-meta-synthesis`, `main` — migrated 2026-10-31
+from the `hackathon/meta-ai-synthesis` branch of
+`riznykst/fen-triadic-synthesis` with full history preserved; the
+pre-hackathon boundary inside this repository is the
+`baseline-pre-hackathon` tag (`git log baseline-pre-hackathon..main`
+shows exactly the hackathon work).
 
 This file separates what existed before the hackathon from what is built
 during it. It is updated by every task commit that moves that boundary
