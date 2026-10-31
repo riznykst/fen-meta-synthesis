@@ -35,3 +35,10 @@ id_ed25519*
 # Committed only after explicit human review (SPEC 0.6; eval/results/ is
 # the curated, metrics-only exception and is NOT under this directory.)
 artifacts/
+
+# Owner-local files (never publish): the final video script is kept local
+# by the owner's decision. Note: VIDEO_SCRIPT.md is also tracked from an
+# earlier pack, so on the owner's machine it is additionally protected by
+# `git update-index --skip-worktree VIDEO_SCRIPT.md` — the ignore rule
+# alone does not untrack files.
+VIDEO_SCRIPT.md
