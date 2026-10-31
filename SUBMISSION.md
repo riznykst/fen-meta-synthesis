@@ -68,6 +68,21 @@ detection, including a B0 baseline showing how many fabricated quotes
 would pass *without* the provenance gate (25% on the labelled synthetic
 fixture; 0% can be accepted with it).
 
+**How this differs.** Citation-verification tools *check* quotes. FEN ×
+Meta makes that check a **gate**: an unverified quote cannot be accepted
+(the UI disables the button, the API returns 409), no final status exists
+without a recorded human decision, and every decision carries the full
+provenance chain — document, exact quote, model and prompt hash, human
+verdict — in a workflow built for *conflicting primary sources*
+(dictionaries, archives, low-resource-language records), not generic
+fact-checking. The individual techniques (quote checking, human review,
+provenance, contradiction detection) are known; the contribution is
+their assembly into one enforced rule — the model only proposes — on top
+of an existing open-source research prototype, with the pre-hackathon /
+hackathon boundary kept verifiable in the repository history. We do not
+claim a fundamentally new technique, and the submission texts and demo
+are written to that standard.
+
 ## Public GitHub Repository
 
 https://github.com/riznykst/fen-meta-synthesis
@@ -118,7 +133,7 @@ Verified live during the hackathon: a real `POST /analyze` against
 `muse-spark-1.3` returned structured claims with all quotes verified,
 including a temporal-mismatch contradiction between two sources; a
 schema-constrained run on 2026-10-28 returned 2 claims, both quotes
-verified. Offline, 190 pytest tests and the Node UI tests cover the
+verified. Offline, 199 pytest tests and the Node UI tests cover the
 workflow with synthetic fixtures (labelled as such).
 
 What was built during the hackathon (vs the pre-existing open-source
@@ -139,6 +154,16 @@ extraction auditable. Without a model of this class the workflow
 collapses back to manual reconciliation; without the governance layer
 around it, the model's output cannot be trusted. FEN supplies the
 second half — Meta's model supplies the first.
+
+That division is also the differentiation: existing citation checkers
+verify text after the fact, and generic human-in-the-loop tools leave
+acceptance to convention. Here the Meta model's structured output is
+fed into a deterministic gate it cannot pass on its own — schema
+validation, quote location, the 409 accept-lock — and the *only* path
+from proposal to accepted knowledge is a recorded human decision with
+its provenance chain. The model is used at full strength (long
+documents, cross-source reasoning, verbatim spans) precisely because
+the system around it assumes it can be wrong.
 
 ## Provide feedback from your experience using Meta products
 
