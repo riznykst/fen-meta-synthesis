@@ -15,7 +15,9 @@
     { "source": "/demo",    "destination": "/web/portal/demo.html" },
     { "source": "/demo/",   "destination": "/web/portal/demo.html" },
     { "source": "/faq",     "destination": "/web/portal/faq.html" },
-    { "source": "/faq/",    "destination": "/web/portal/faq.html" }
+    { "source": "/faq/",    "destination": "/web/portal/faq.html" },
+    { "source": "/registry", "destination": "/web/portal/registry.html" },
+    { "source": "/registry/", "destination": "/web/portal/registry.html" }
   ],
   "redirects": [
     { "source": "/index.html",    "destination": "/",         "permanent": true },
