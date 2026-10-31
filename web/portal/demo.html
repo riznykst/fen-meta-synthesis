@@ -49,6 +49,7 @@
   .error { color:#b23a3a; font-size:12.5px; line-height:1.5; margin-top:10px; }
   .state { font-size:12px; color:#2d5a8e; margin-top:8px; min-height:16px; }
   mark { background:#ffe58a; padding:0 2px; border-radius:2px; }
+  #uploadDrop.dragover { background:#e8eff7; border-color:#2d5a8e; }
   .source-text { white-space:pre-wrap; font-size:12.5px; line-height:1.6; background:#fff; border:1px solid #e3ded2; border-radius:8px; padding:10px 12px; }
   footer { text-align:center; font-size:11px; color:#6b6560; padding:8px 0 18px; }
   footer a { color:#2d5a8e; }
@@ -76,6 +77,12 @@
       <button class="dataset-btn" id="dataset-sumerian" type="button">Sumerian dictionary entries (ePSD2)</button>
     </div>
     <p class="meta" id="datasetNote">Synthetic demo documents — invented neutral text, not corpus data. Replace with your own sources at any time.</p>
+    <div id="uploadDrop" style="border:1.5px dashed #2d5a8e66;border-radius:10px;padding:12px;text-align:center;margin:10px 0">
+      <label class="btn secondary" for="docUpload" style="display:inline-block;width:auto;padding:10px 18px;margin:0;cursor:pointer">Upload document(s)…</label>
+      <input id="docUpload" type="file" accept=".txt,.md,.json,.text" multiple style="display:none">
+      <div class="meta" style="margin-top:7px">…or drag &amp; drop .txt / .md / .json files here (up to 3 documents, 30 000 characters total). Files are read in your browser and sent to the model only when you click Analyse.</div>
+      <div class="meta" id="uploadNote" role="status"></div>
+    </div>
     <label class="lbl" for="reviewer">Reviewer name (recorded with every decision)</label>
     <input id="reviewer" value="reviewer-1">
     <label class="lbl" for="doc1Title">Document 1 title</label>

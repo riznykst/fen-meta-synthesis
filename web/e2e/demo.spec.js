@@ -51,6 +51,18 @@ test("demo loads, dataset switcher fills Sumerian entries", async ({ page }) => 
   expect(errors).toEqual([]);
 });
 
+test("demo upload fills document fields from a file", async ({ page }) => {
+  await page.goto(DEMO);
+  await page.setInputFiles("#docUpload", {
+    name: "my-source.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.from("Uploaded text about a river crossing used by traders.", "utf-8"),
+  });
+  await expect(page.locator("#doc1")).toHaveValue(/Uploaded text about a river crossing/);
+  await expect(page.locator("#doc1Title")).toHaveValue("my-source");
+  await expect(page.locator("#uploadNote")).toContainText("Loaded 1 document(s) from my-source.txt");
+});
+
 test("demo analysis shows proposals with the ePSD2 dictionary badge", async ({ page }) => {
   await page.route("**/analyze", (route) =>
     route.fulfill({ status: 200, contentType: "application/json", headers: CORS, body: JSON.stringify(ANALYSIS) })
