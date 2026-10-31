@@ -9,7 +9,9 @@
     { "source": "/widget",  "destination": "/web/widget/demo.html" },
     { "source": "/widget/", "destination": "/web/widget/demo.html" },
     { "source": "/embed",   "destination": "/web/widget/embed-example.html" },
-    { "source": "/embed/",  "destination": "/web/widget/embed-example.html" }
+    { "source": "/embed/",  "destination": "/web/widget/embed-example.html" },
+    { "source": "/review",  "destination": "/web/portal/review.html" },
+    { "source": "/review/", "destination": "/web/portal/review.html" }
   ],
   "redirects": [
     { "source": "/index.html",    "destination": "/",         "permanent": true },
