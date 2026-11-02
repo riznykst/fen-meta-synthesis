@@ -207,8 +207,17 @@
 
   function errorMessage(status, detail) {
     if (status === 502) {
+      // The server tells us WHICH 502 it is; a generic "the model did not
+      // respond" hid a missing API key once and cost more time than the fix.
+      var reason = String(detail || "");
+      if (/not configured/i.test(reason)) {
+        return "The model service is running but has no API key configured (error 502). "
+          + "Set FEN_LLM_BASE_URL, FEN_LLM_API_KEY and FEN_LLM_MODEL, restart the demo, and try again. "
+          + "Nothing was saved — no proposal was created.";
+      }
       return "The model did not respond or returned an answer that could not be read (error 502). "
-        + "Nothing was saved and no proposal was created — check that the model service is running, then try again.";
+        + "Nothing was saved and no proposal was created — check that the model service is running, then try again."
+        + (reason ? " Server said: " + reason : "");
     }
     if (status === 422) {
       return "The documents were not accepted (error 422): " + (detail || "check that at least one document with text is provided and the total size is within the limit.");

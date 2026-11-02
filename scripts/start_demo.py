@@ -74,6 +74,15 @@ def _already_serving(url: str) -> bool:
         return False
 
 
+LLM_ENV_KEYS = ("FEN_LLM_BASE_URL", "FEN_LLM_API_KEY", "FEN_LLM_MODEL")
+
+
+def missing_llm_config(env=None) -> list:
+    """Provider settings that are absent — Analyse returns 502 without them."""
+    source = os.environ if env is None else env
+    return [key for key in LLM_ENV_KEYS if not source.get(key)]
+
+
 def main() -> int:
     load_dotenv()
     # Persist analyses + human decisions across restarts (JSONL store,
@@ -87,10 +96,11 @@ def main() -> int:
             print(f"ERROR: something already serves :{port} ({url} answers).")
             print("Stop that instance first, then run the demo launcher again.")
             return 2
-    if not os.environ.get("FEN_LLM_BASE_URL"):
-        print("NOTE: FEN_LLM_BASE_URL is not set — the Review screen will open,")
-        print("but Analyse will return 502 until you configure a provider")
-        print("(copy .env.example to .env and fill in your Meta key).")
+    missing = missing_llm_config()
+    if missing:
+        print(f"NOTE: {', '.join(missing)} not set — the demo will open, but")
+        print("Analyse will return 502 (and the UI will say the key is missing)")
+        print("until you copy .env.example to .env and fill in your provider key.")
     python = sys.executable
     children = [
         subprocess.Popen(

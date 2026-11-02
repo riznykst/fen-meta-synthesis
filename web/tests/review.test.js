@@ -258,6 +258,19 @@ test("errorMessage: 502 is understandable and non-technical first", () => {
   assert.match(R.errorMessage(422, "bad input"), /bad input/);
 });
 
+test("errorMessage: a 502 from a keyless server names the real cause", () => {
+  const msg = R.errorMessage(502, "LLM not configured (set FEN_LLM_BASE_URL / FEN_LLM_API_KEY / FEN_LLM_MODEL)");
+  assert.match(msg, /no API key configured/);
+  assert.match(msg, /FEN_LLM_API_KEY/);
+  assert.match(msg, /Nothing was saved/);
+  assert.doesNotMatch(msg, /model did not respond/i);
+
+  // Other 502s still read as a model failure and quote the server detail.
+  const other = R.errorMessage(502, "upstream timeout");
+  assert.match(other, /model did not respond/i);
+  assert.match(other, /upstream timeout/);
+});
+
 test("provenanceBadgeHtml: synthetic sources are surfaced, primary is not", () => {
   assert.strictEqual(R.provenanceBadgeHtml("primary"), "");
   assert.strictEqual(R.provenanceBadgeHtml(null), "");
