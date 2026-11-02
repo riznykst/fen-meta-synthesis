@@ -125,11 +125,17 @@ class SupabaseRegistry:
                 cur.execute(
                     """
                     insert into public.analysis_documents
-                      (analysis_fk, document_id, title, content)
-                    values (%s, %s, %s, %s)
+                      (analysis_fk, document_id, title, content, provenance)
+                    values (%s, %s, %s, %s, %s)
                     on conflict (analysis_fk, document_id) do nothing
                     """,
-                    (analysis_fk, doc.get("document_id"), doc.get("title"), doc.get("text") or ""),
+                    (
+                        analysis_fk,
+                        doc.get("document_id"),
+                        doc.get("title"),
+                        doc.get("text") or "",
+                        doc.get("provenance") or "primary",
+                    ),
                 )
 
             for claim in claims:
@@ -139,8 +145,8 @@ class SupabaseRegistry:
                       (analysis_fk, item_id, item_type, statement, quote,
                        interpretation, document_id, uncertainty,
                        review_recommendation, ambiguities, quote_verified,
-                       provenance_status)
-                    values (%s, %s, 'claim', %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                       provenance_status, provenance)
+                    values (%s, %s, 'claim', %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     on conflict (analysis_fk, item_id) do nothing
                     """,
                     (
@@ -155,17 +161,30 @@ class SupabaseRegistry:
                         claim.get("ambiguities") or [],
                         bool(claim.get("quote_verified")),
                         claim.get("provenance_status"),
+                        claim.get("provenance") or "primary",
                     ),
                 )
 
+            claim_provenance = {
+                c.get("claim_id"): (c.get("provenance") or "primary") for c in claims
+            }
             for contra in contradictions:
+                # A contradiction inherits the weakest provenance of the claims
+                # it links, so a synthetic source never looks authoritative.
+                refs = contra.get("claim_ids") or []
+                if "synthetic" in {claim_provenance.get(c) for c in refs}:
+                    contra_prov = "synthetic"
+                elif "secondary" in {claim_provenance.get(c) for c in refs}:
+                    contra_prov = "secondary"
+                else:
+                    contra_prov = "primary"
                 cur.execute(
                     """
                     insert into public.items
                       (analysis_fk, item_id, item_type, contradiction_kind,
                        explanation, alternative_interpretations, claim_ids,
-                       quote_verified)
-                    values (%s, %s, 'contradiction', %s, %s, %s, %s, %s)
+                       quote_verified, provenance)
+                    values (%s, %s, 'contradiction', %s, %s, %s, %s, %s, %s)
                     on conflict (analysis_fk, item_id) do nothing
                     """,
                     (
@@ -176,6 +195,7 @@ class SupabaseRegistry:
                         contra.get("alternative_interpretations") or [],
                         contra.get("claim_ids") or [],
                         bool(contra.get("quotes_verified")),
+                        contra_prov,
                     ),
                 )
             conn.commit()
@@ -241,7 +261,8 @@ class SupabaseRegistry:
                 """
                 select item_id, item_type, status, statement, quote, document_id,
                        reviewer, verdict, comment, recorded_at, decision_id,
-                       analysis_id, model_returned, prompt_hash, quote_verified
+                       analysis_id, model_returned, prompt_hash, quote_verified,
+                       provenance
                 from public.registry_public
                 order by recorded_at desc
                 limit %s
@@ -271,6 +292,7 @@ class SupabaseRegistry:
                 "model_returned": row[12],
                 "prompt_hash": row[13],
                 "quote_verified": bool(row[14]),
+                "provenance": row[15] or "primary",
                 "source": "supabase",
             })
         return out

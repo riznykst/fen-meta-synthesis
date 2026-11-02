@@ -95,6 +95,7 @@ Views:
 # 1. With psql (connection string from Supabase → Project settings → Database)
 psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/0001_schema.sql
 psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/0002_rls_and_rpc.sql
+psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/0003_provenance.sql
 
 # 2. Or with the Supabase CLI (linked project)
 supabase db push
@@ -102,9 +103,11 @@ supabase db push
 # 3. Or paste each file into the Supabase SQL editor, in order.
 ```
 
-Both files are idempotent (guarded `create type`, `create table if not
-exists`, `create or replace`, `drop trigger if exists`), so re-running them
-is safe.
+All files are idempotent (guarded `create type`, `create table if not
+exists`, `create or replace`, `drop constraint if exists`), so re-running
+them is safe. `0003_provenance.sql` adds the source-document provenance to
+`analysis_documents`, `items` and the public view — without it the durable
+history would lose the SYNTHETIC label that the API already knows.
 
 Optional: install a driver to apply them from this repo without `psql`:
 

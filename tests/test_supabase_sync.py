@@ -119,6 +119,9 @@ def test_analyze_writes_analysis_to_supabase(monkeypatch):
     assert len(fake.saved) == 1
     assert fake.saved[0]["analysis_id"] == resp.json()["analysis_id"]
     assert fake.saved[0]["documents"][0]["document_id"] == "d1"
+    # Source-document provenance must travel with the write, otherwise the
+    # durable history cannot say that evidence was synthetic.
+    assert fake.saved[0]["documents"][0]["provenance"] == "primary"
 
 
 def test_decision_goes_through_supabase_rpc(monkeypatch):

@@ -23,8 +23,14 @@
       return;
     }
     box.innerHTML = rows.map(function (r) {
+      // Accepted knowledge still says when its evidence was not a primary
+      // source — the database keeps the document provenance (migration 0003).
+      var prov = String(r.provenance || "primary");
+      var provBadge = prov === "primary" ? ""
+        : '<span class="badge prov-' + esc(prov) + '">'
+          + (prov === "synthetic" ? "SYNTHETIC source" : "SECONDARY source") + "</span>";
       return '<article class="entry">'
-        + '<div class="head"><span class="badge">accepted</span>'
+        + '<div class="head"><span class="badge">accepted</span>' + provBadge
         + '<span class="meta">' + esc(r.itemType) + " · " + esc(r.itemId) + "</span></div>"
         + '<p class="statement">' + esc(r.statement || r.quote) + "</p>"
         + (r.quote ? '<blockquote class="quote">' + esc(r.quote) + "</blockquote>" : "")
@@ -33,7 +39,8 @@
         + (r.comment ? '<p class="meta">comment: ' + esc(r.comment) + "</p>" : "")
         + '<p class="meta">model ' + esc(r.modelReturned || "—")
         + " · prompt " + esc((r.promptHash || "").slice(0, 18)) + "…"
-        + " · quote verified: " + (r.quoteVerified ? "yes" : "no") + "</p>"
+        + " · quote verified: " + (r.quoteVerified ? "yes" : "no")
+        + " · source provenance: " + esc(prov) + "</p>"
         + "</article>";
     }).join("");
   }

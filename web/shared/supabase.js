@@ -103,6 +103,9 @@
       modelReturned: String((row && row.model_returned) || ""),
       promptHash: String((row && row.prompt_hash) || ""),
       quoteVerified: row ? row.quote_verified === true : false,
+      // Source-document provenance (migration 0003): primary for ordinary
+      // knowledge, synthetic/secondary when the evidence was not a primary text.
+      provenance: String((row && row.provenance) || "primary"),
     };
   }
 

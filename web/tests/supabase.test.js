@@ -124,3 +124,13 @@ test("fetch rejects on HTTP error and when unconfigured", async () => {
     /not configured/
   );
 });
+
+test("registry rows carry the source-document provenance", () => {
+  const primary = S.fenRegistryRow({ item_id: "c1", quote_verified: true });
+  assert.strictEqual(primary.provenance, "primary");
+
+  const synthetic = S.fenRegistryRow({
+    item_id: "c2", quote_verified: true, provenance: "synthetic",
+  });
+  assert.strictEqual(synthetic.provenance, "synthetic");
+});

@@ -46,3 +46,23 @@ test("registry page surfaces an HTTP error with guidance", async ({ page }) => {
   await expect(page.locator("#state")).toContainText("HTTP 401");
   await expect(page.locator("#state")).toContainText("publishable key");
 });
+
+test("registry page flags accepted knowledge whose evidence is synthetic", async ({ page }) => {
+  await page.route("**/rest/v1/registry_public**", (route) =>
+    route.fulfill({
+      status: 200, contentType: "application/json", headers: CORS,
+      body: JSON.stringify([
+        {
+          item_id: "c1", item_type: "claim", status: "accepted",
+          statement: "Article 11 requires ten-year retention", quote: "Article 11 requires ...",
+          document_id: "d3", reviewer: "reviewer-1", verdict: "accept", comment: "",
+          recorded_at: "2026-11-02T12:00:00Z", model_returned: "muse-spark-1.3",
+          prompt_hash: "sha256:abc", quote_verified: true, provenance: "synthetic",
+        },
+      ]),
+    })
+  );
+  await page.goto(PAGE);
+  await expect(page.locator("#rows")).toContainText("SYNTHETIC source");
+  await expect(page.locator("#rows")).toContainText("source provenance: synthetic");
+});
