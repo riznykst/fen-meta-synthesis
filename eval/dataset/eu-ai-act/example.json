@@ -1,0 +1,53 @@
+{
+  "_kind": "EU AI Act — public regulation texts + one SYNTHETIC commentary",
+  "example_id": "eu-ai-act-art11-art18-01",
+  "source": {
+    "corpus": "EUR-Lex — Regulation (EU) 2024/1689 (Artificial Intelligence Act)",
+    "records": [
+      "OJ L, 2024/1689, 12.7.2024",
+      "ELI: http://data.europa.eu/eli/reg/2024/1689/oj"
+    ],
+    "license": "EUR-Lex reuse — Commission Decision 2011/833/EU; source acknowledged (see sources/SOURCES.md)"
+  },
+  "documents": [
+    {
+      "document_id": "art11",
+      "title": "Article 11 — Technical documentation",
+      "text": "Article 11\n\nTechnical documentation\n\n1.   The technical documentation of a high-risk AI system shall be drawn up before that system is placed on the market or put into service and shall be kept up-to date.\n\nThe technical documentation shall be drawn up in such a way as to demonstrate that the high-risk AI system complies with the requirements set out in this Section and to provide national competent authorities and notified bodies with the necessary information in a clear and comprehensive form to assess the compliance of the AI system with those requirements. It shall contain, at a minimum, the elements set out in Annex IV. SMEs, including start-ups, may provide the elements of the technical documentation specified in Annex IV in a simplified manner. To that end, the Commission shall establish a simplified technical documentation form targeted at the needs of small and microenterprises. Where an SME, including a start-up, opts to provide the information required in Annex IV in a simplified manner, it shall use the form referred to in this paragraph. Notified bodies shall accept the form for the purposes of the conformity assessment.\n\n2.   Where a high-risk AI system related to a product covered by the Union harmonisation legislation listed in Section A of Annex I is placed on the market or put into service, a single set of technical documentation shall be drawn up containing all the information set out in paragraph 1, as well as the information required under those legal acts.\n\n3.   The Commission is empowered to adopt delegated acts in accordance with Article 97 in order to amend Annex IV, where necessary, to ensure that, in light of technical progress, the technical documentation provides all the information necessary to assess the compliance of the system with the requirements set out in this Section.",
+      "provenance": "primary"
+    },
+    {
+      "document_id": "art12",
+      "title": "Article 12 — Record-keeping",
+      "text": "Article 12\n\nRecord-keeping\n\n1.   High-risk AI systems shall technically allow for the automatic recording of events (logs) over the lifetime of the system.\n\n2.   In order to ensure a level of traceability of the functioning of a high-risk AI system that is appropriate to the intended purpose of the system, logging capabilities shall enable the recording of events relevant for:\n\n(a)\n\nidentifying situations that may result in the high-risk AI system presenting a risk within the meaning of Article 79(1) or in a substantial modification;\n\n(b)\n\nfacilitating the post-market monitoring referred to in Article 72; and\n\n(c)\n\nmonitoring the operation of high-risk AI systems referred to in Article 26(5).\n\n3.   For high-risk AI systems referred to in point 1 (a), of Annex III, the logging capabilities shall provide, at a minimum:\n\n(a)\n\nrecording of the period of each use of the system (start date and time and end date and time of each use);\n\n(b)\n\nthe reference database against which input data has been checked by the system;\n\n(c)\n\nthe input data for which the search has led to a match;\n\n(d)\n\nthe identification of the natural persons involved in the verification of the results, as referred to in Article 14(5).",
+      "provenance": "primary"
+    },
+    {
+      "document_id": "art18",
+      "title": "Article 18 — Documentation keeping",
+      "text": "Article 18\n\nDocumentation keeping\n\n1.   The provider shall, for a period ending 10 years after the high-risk AI system has been placed on the market or put into service, keep at the disposal of the national competent authorities:\n\n(a)\n\nthe technical documentation referred to in Article 11;\n\n(b)\n\nthe documentation concerning the quality management system referred to in Article 17;\n\n(c)\n\nthe documentation concerning the changes approved by notified bodies, where applicable;\n\n(d)\n\nthe decisions and other documents issued by the notified bodies, where applicable;\n\n(e)\n\nthe EU declaration of conformity referred to in Article 47.\n\n2.   Each Member State shall determine conditions under which the documentation referred to in paragraph 1 remains at the disposal of the national competent authorities for the period indicated in that paragraph for the cases when a provider or its authorised representative established on its territory goes bankrupt or ceases its activity prior to the end of that period.\n\n3.   Providers that are financial institutions subject to requirements regarding their internal governance, arrangements or processes under Union financial services law shall maintain the technical documentation as part of the documentation kept under the relevant Union financial services law.",
+      "provenance": "primary"
+    },
+    {
+      "document_id": "commentary",
+      "title": "Industry commentary — SYNTHETIC",
+      "text": "# Industry commentary — SYNTHETIC\n\n**SYNTHETIC. Written for the demo to illustrate a common attribution error. It is not\na real commentary, not a quote from any published source, and not legal advice.**\n\nA frequent misreading of the AI Act concerns how long documentation must be kept.\n\n1. The Act requires a quality management system for high-risk systems.\n2. Article 11 requires the technical documentation to be kept for 10 years after the\n   system has been placed on the market.\n3. Providers should therefore plan a ten-year archiving period from day one.\n\nThe paragraphs above are intentionally illustrative: point 1 is a real obligation,\npoint 2 is the misattribution the demo checks, point 3 is advice you should not follow\nwithout a lawyer.\n",
+      "provenance": "synthetic"
+    }
+  ],
+  "gold_claims": [
+    {
+      "quote": "The technical documentation of a high-risk AI system shall be drawn up before that system is placed on the market or put into service"
+    },
+    {
+      "quote": "High-risk AI systems shall technically allow for the automatic recording of events (logs) over the lifetime of the system"
+    },
+    {
+      "quote": "for a period ending 10 years after the high-risk AI system has been placed on the market or put into service"
+    },
+    {
+      "quote": "Article 11 requires the technical documentation to be kept for 10 years after the system has been placed on the market"
+    }
+  ],
+  "gold_contradictions": []
+}

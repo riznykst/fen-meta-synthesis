@@ -205,6 +205,28 @@ def test_verify_provenance_unknown_document_and_dangling_contradiction():
 
 
 # ---------------------------------------------------------------- service ---
+def test_source_document_provenance_defaults_and_validation():
+    plain = analysis.SourceDocument(document_id="d1", text="x")
+    assert plain.provenance == "primary"
+    synthetic = analysis.SourceDocument(document_id="d1", text="x", provenance="synthetic")
+    assert synthetic.provenance == "synthetic"
+    with pytest.raises(Exception):
+        analysis.SourceDocument(document_id="d1", text="x", provenance="made-up")
+
+
+def test_claim_inherits_source_document_provenance():
+    """A verified quote from a synthetic source must be visibly synthetic."""
+    synthetic_doc = analysis.SourceDocument(
+        document_id="d1", text="The hill marks the old trade route.", provenance="synthetic"
+    )
+    draft = analysis.parse_analysis(
+        json.dumps({"claims": [_claim("c1", "The hill marks the old trade route", "d1")]})
+    )
+    checked = analysis.verify_provenance(draft, [synthetic_doc])
+    assert checked["claims"][0]["provenance"] == "synthetic"
+    assert checked["claims"][0]["quote_verified"] is True
+
+
 def test_analyze_documents_result_shape_and_hash():
     with mock.patch.object(
         analyze_svc, "chat_completion_detailed", return_value=_result(SYNTHETIC_RESPONSE)

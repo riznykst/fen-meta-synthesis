@@ -22,10 +22,33 @@ one-screen demo (the full Review screen remains at `/web/portal/review.html`).
 
 The pre-filled documents are a *synthetic demo example* (an invented
 trade-route story). The dataset switcher also offers **Sumerian dictionary
-entries (ePSD2)**: short verified dictionary excerpts for `lu`, `bahar`
-and `me` — labelled as excerpts, not corpus records and not gold data.
-Replace the documents with any real sources to repeat the scenario on
-your own material — the workflow is dataset-agnostic.
+entries (ePSD2)** — short verified dictionary excerpts for `lu`, `bahar`
+and `me`, labelled as excerpts, not corpus records and not gold data — and
+**EU AI Act — public texts (not legal advice)**: Articles 11 and 18 from
+Regulation (EU) 2024/1689 (EUR-Lex) plus one clearly **SYNTHETIC**
+commentary paragraph that repeats a common misattribution (a ten-year
+retention rule attributed to Article 11, while it actually belongs to
+Article 18). Replace the documents with any real sources to repeat the
+scenario on your own material — the workflow is dataset-agnostic.
+
+## The wrong-attribution case (EU AI Act preset, ~60 seconds)
+
+1. Click **EU AI Act — public texts (not legal advice)**. The banner says
+   exactly that, and the third document is titled *Industry commentary —
+   SYNTHETIC*.
+2. Analyse. The model proposes, among others, a claim from Article 18 (the
+   real ten-year rule) and a claim from the synthetic commentary that
+   attributes that rule to Article 11.
+3. The commentary claim carries a red **SYNTHETIC source** badge: its quote
+   *is* verified — the words really are in that document — but the document
+   is illustrative, not a primary source. This distinction is the point:
+   quote verification proves location, not truth or authority.
+4. The model usually also flags the **contradiction** between the Article 18
+   claim and the commentary claim. **Dispute** it with a comment: the
+   attribution is wrong, the retention rule is Article 18.
+5. Open the Registry: nothing accepted lands there unless a human accepted
+   it. Article 11/18 material only enters accepted knowledge if you accept
+   the correct claim.
 
 ## 1. Analyse (45 seconds)
 

@@ -13,6 +13,7 @@ licence-checked by the human (T8)** — nothing below is itself corpus data.
 | CDLI | Not used | Catalogue text freely reusable with citation; imagery non-commercial only | Metadata may be cited; never copy tablet imagery |
 | Lecture transcripts ("Sumerian language" 1–2, DownSub auto-subtitles) | Provenance for *why* a lemma was proposed (human's lecture analysis) | Auto-generated subtitles of third-party videos; rights with the video authors/platforms | Provenance notes only, marked as ASR. Never gold evidence, never republished as dataset texts |
 | Modern Sumerian (modernsumerian.org / OCaml repo) | Human learning reference for grammar background | No licence file found in the repository (checked 2026-10-28) | Read-only reference for the human; copy nothing into this repository |
+| EUR-Lex — Regulation (EU) 2024/1689 (AI Act) | `eu-ai-act/` dataset: Articles 11, 12 and 18, used to demonstrate a wrong-attribution case (a ten-year retention rule that belongs to Art 18, not Art 11) | EUR-Lex reuse policy (Commission Decision 2011/833/EU): reuse allowed, including commercially, with acknowledgement and without distorting the original meaning | Articles kept verbatim (whitespace normalised) with attribution in `eu-ai-act/sources/SOURCES.md`. No legal advice is given, no compliance with the Act is claimed. The accompanying commentary is **SYNTHETIC** and labelled as such |
 
 Dataset gate: `python eval/validate_dataset.py` refuses examples without
 a named, human-checked source licence. Synthetic examples must be marked

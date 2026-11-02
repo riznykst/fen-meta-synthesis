@@ -66,7 +66,12 @@ class ContradictionKind(str, Enum):
 
 
 class SourceDocument(BaseModel):
-    """One source document supplied in the analysis request (SPEC section 6)."""
+    """One source document supplied in the analysis request (SPEC section 6).
+
+    ``provenance`` classifies the document itself (primary source, secondary
+    commentary, or synthetic illustration). It is metadata about the source,
+    not about the model's claim, and it is echoed on every claim drawn from
+    that document so the reviewer can see when evidence is synthetic."""
 
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
@@ -77,6 +82,16 @@ class SourceDocument(BaseModel):
     )
     text: str = Field(min_length=1)
     title: Optional[str] = None
+    provenance: str = Field(default="primary", description="primary | secondary | synthetic")
+
+    @model_validator(mode="after")
+    def _known_provenance(self) -> "SourceDocument":
+        allowed = {"primary", "secondary", "synthetic"}
+        if self.provenance not in allowed:
+            raise ValueError(
+                f"provenance must be one of {sorted(allowed)}, got {self.provenance!r}"
+            )
+        return self
 
 
 class ClaimDraft(BaseModel):
@@ -288,6 +303,7 @@ def verify_provenance(draft: AnalysisDraft, documents: List[SourceDocument]) -> 
     """
     sources = {d.document_id: d.text for d in documents}
     normalized = {key: _normalize_ws(text) for key, text in sources.items()}
+    provenance = {d.document_id: d.provenance for d in documents}
     claim_ids = {c.claim_id for c in draft.claims}
     claims_out = []
     problems: List[dict] = []
@@ -327,6 +343,10 @@ def verify_provenance(draft: AnalysisDraft, documents: List[SourceDocument]) -> 
         record = claim.model_dump(mode="json", by_alias=True)
         record["quote_verified"] = quote_verified
         record["provenance_status"] = status
+        # Provenance of the SOURCE document (primary / secondary / synthetic),
+        # so the reviewer can see when a verified quote comes from an
+        # illustrative source rather than from a primary text.
+        record["provenance"] = provenance.get(claim.document_id, "unknown")
         claims_out.append(record)
         by_id[claim.claim_id] = record
 

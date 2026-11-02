@@ -141,6 +141,21 @@ Each line names the task commit that introduced it.
   effect of each verdict) before the voter casts it; linked as "Details —
   what am I voting on?" from the classic candidates list and the Triadic
   consensus list.
+- Second domain — EU AI Act (2026-11-02): Articles 11, 12 and 18 of
+  Regulation (EU) 2024/1689 taken verbatim from EUR-Lex (reuse with
+  acknowledgement, see `eval/dataset/SOURCES.md`) plus one **SYNTHETIC**
+  commentary paragraph that misattributes the ten-year retention rule to
+  Article 11 instead of Article 18. `POST /analyze` now accepts a
+  `provenance` field per document (primary / secondary / synthetic) and
+  echoes it on every claim, so the Review screen badges evidence drawn from
+  a synthetic source. `eval/dataset/eu-ai-act/example.json` is a draft gold
+  example; the dataset validator walks sub-directories. No legal advice is
+  given and no compliance with the Act is claimed.
+- Durable registry (Supabase): schema, RLS and the `record_decision()` RPC
+  live in `supabase/migrations/`; the demo API writes analyses and human
+  decisions there when `SUPABASE_DB_URL` is set, and `/registry` (Vercel)
+  reads accepted knowledge through the publishable key. Only the accepted
+  view is public; base tables stay private.
 
 ## Rule that never moves
 

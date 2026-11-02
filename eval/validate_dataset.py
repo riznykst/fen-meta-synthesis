@@ -101,10 +101,13 @@ def validate_example(example: dict, source_name: str = "") -> list:
 
 
 def load_examples(path: Path):
-    files = sorted(path.glob("*.json")) if path.is_dir() else [path]
+    # Recursive: datasets may live in sub-directories (eu-ai-act/example.json).
+    files = sorted(path.rglob("*.json")) if path.is_dir() else [path]
     for file in files:
         if file.name.startswith("TEMPLATE"):
             print(f"SKIP {file.name} (template — filled in by the human)")
+            continue
+        if "/sources/" in file.as_posix() or "/results/" in file.as_posix():
             continue
         data = json.loads(file.read_text(encoding="utf-8"))
         examples = data if isinstance(data, list) else [data]
