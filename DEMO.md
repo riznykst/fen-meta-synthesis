@@ -43,8 +43,12 @@ scenario on your own material — the workflow is dataset-agnostic.
    *is* verified — the words really are in that document — but the document
    is illustrative, not a primary source. This distinction is the point:
    quote verification proves location, not truth or authority.
-4. The model usually also flags the **contradiction** between the Article 18
-   claim and the commentary claim. **Dispute** it with a comment: the
+4. In a live run (2026-11-02) the model also surfaced a **contradiction**
+   between the Article 18 claim and the commentary claim. That item is
+   **model-found, not gold-labelled** — `example.json` keeps
+   `gold_contradictions: []` because no human has verified it as a gold
+   label. The model may or may not surface it on another run, so do not
+   present it as guaranteed. **Dispute** it with a comment: the
    attribution is wrong, the retention rule is Article 18.
 5. Open the Registry: nothing accepted lands there unless a human accepted
    it. Article 11/18 material only enters accepted knowledge if you accept

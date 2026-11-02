@@ -27,3 +27,8 @@ be repeated and compared.
 - No legal interpretation, no advice, no claim of compliance with the Act.
 - No recitals, no annexes — only the three articles used by the demo.
 - The commentary is SYNTHETIC and is labelled as such in the UI.
+- `gold_contradictions` in `example.json` is intentionally empty. In a live
+  run (2026-11-02) the model surfaced one contradiction between the Article
+  18 claim and the SYNTHETIC commentary claim; that item is **model-found,
+  not gold-labelled**, and no human has verified it as a gold label yet.
+  Reports and the demo video must call it a model-found item.
