@@ -223,7 +223,7 @@ def build_system_prompt() -> str:
         '{"claims": [{"claim_id": "c1", "quote": "<exact span copied verbatim from the document>", '
         '"statement": "<the claim as asserted, in concise wording>", '
         '"interpretation": "<your interpretation, kept separate from the claim itself>", '
-        '"document_id": "<id of one supplied document>", '
+        '"document_id": "<id of the document the claim is ABOUT — the attribution target, never a document that merely repeats someone else\'s claim about it>", '
         '"ambiguities": ["<ambiguity or missing context, [] if none>"], '
         '"uncertainty": "low | medium | high | insufficient_evidence", '
         '"review_recommendation": "proceed_to_human_review | needs_expert_review | more_evidence_required"}], '
@@ -232,8 +232,14 @@ def build_system_prompt() -> str:
         '"explanation": "<why the claims may contradict>", '
         '"alternative_interpretations": ["<reading that would resolve it, [] if none>"]}], '
         '"summary": "<optional one-line summary>"}.\n'
-        "Rules: use only the supplied document_id values; copy quote verbatim "
-        "so it can be located in the source; report contradictions between "
+        "Rules: use only the supplied document_id values; cite the document "
+        "the claim attributes content to (if a claim says what Article 11 "
+        "requires, document_id is that article, not a commentary repeating "
+        "it); copy quote verbatim from that same document so it can be "
+        "located in the source; when no passage in the attributed document "
+        "supports the claim, keep that document_id and set uncertainty to "
+        "insufficient_evidence — never re-cite a repeating source just to "
+        "make the quote locatable; report contradictions between "
         "claims whenever dates, values or assertions may conflict; set "
         "uncertainty to insufficient_evidence when evidence is weak; every "
         "claim goes to human review — none is approved by you."

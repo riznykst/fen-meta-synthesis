@@ -94,6 +94,11 @@ def test_prompts_carry_contract_and_only_supplied_documents():
     system = analysis.build_system_prompt()
     assert "never approve" in system.lower()
     assert "quote" in system and "interpretation" in system
+    # Attribution-target rule: the model must cite the document the claim
+    # is about (so the gate checks the right text), never a repeating
+    # source, and must not re-cite to make verification pass.
+    assert "attribution target" in system
+    assert "insufficient_evidence" in system
     payload = json.loads(analysis.build_user_prompt(DOCS, focus="routes"))
     assert [d["document_id"] for d in payload["documents"]] == ["d1", "d2"]
 
