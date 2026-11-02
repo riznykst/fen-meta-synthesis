@@ -45,6 +45,23 @@
     }).join("");
   }
 
+  // How often the page re-reads the public view. Polling, not Realtime:
+  // Supabase Realtime is not enabled on views, and opening the base tables to
+  // anon would defeat the RLS model. Tests shorten this via
+  // window.FEN_REGISTRY_REFRESH_MS.
+  var DEFAULT_REFRESH_MS = 20000;
+
+  function refreshIntervalMs() {
+    var custom = Number(global.FEN_REGISTRY_REFRESH_MS);
+    return custom > 0 ? custom : DEFAULT_REFRESH_MS;
+  }
+
+  function clockLabel() {
+    var d = new Date();
+    function pad(n) { return (n < 10 ? "0" : "") + n; }
+    return pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds());
+  }
+
   function setup() {
     var config = global.fenSupabase.fenSupabaseConfig();
     var state = $("state");
@@ -55,16 +72,41 @@
         + "accepted-knowledge view.";
       return;
     }
-    state.textContent = "Loading accepted knowledge from " + config.url + " …";
-    global.fenSupabase.fenFetchRegistry(config, { limit: 100 })
-      .then(function (rows) {
-        state.textContent = rows.length + " accepted record(s) from " + config.url;
-        render(rows, config);
-      })
-      .catch(function (err) {
-        state.innerHTML = '<span class="err">' + esc(err.message) + "</span> — check the URL and the "
-          + "publishable key, and that the migrations in <code>supabase/migrations/</code> were applied.";
-      });
+    var firstLoad = true;
+    var lastSignature = null;
+
+    function load() {
+      if (firstLoad) state.textContent = "Loading accepted knowledge from " + config.url + " …";
+      return global.fenSupabase.fenFetchRegistry(config, { limit: 100 })
+        .then(function (rows) {
+          var signature = rows.map(function (r) {
+            return r.itemId + "|" + r.recordedAt + "|" + r.provenance;
+          }).join(",");
+          // Re-render only when something actually changed, so a 20s poll does
+          // not fight with a reader who is highlighting text.
+          if (firstLoad || signature !== lastSignature) {
+            render(rows, config);
+            lastSignature = signature;
+          }
+          var seconds = Math.round(refreshIntervalMs() / 1000);
+          state.textContent = rows.length + " accepted record(s) from " + config.url
+            + " · updated " + clockLabel() + " · refreshes every " + seconds + "s";
+          firstLoad = false;
+        })
+        .catch(function (err) {
+          if (firstLoad) {
+            state.innerHTML = '<span class="err">' + esc(err.message) + "</span> — check the URL and the "
+              + "publishable key, and that the migrations in <code>supabase/migrations/</code> were applied.";
+            return;
+          }
+          // A later poll failure must not wipe knowledge that is already shown.
+          state.textContent = "Could not refresh (" + err.message + ") — showing the last successful read.";
+        });
+    }
+
+    load().then(function () {
+      global.setInterval(load, refreshIntervalMs());
+    });
   }
 
   document.addEventListener("DOMContentLoaded", function () {

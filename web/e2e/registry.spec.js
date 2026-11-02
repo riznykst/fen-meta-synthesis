@@ -66,3 +66,60 @@ test("registry page flags accepted knowledge whose evidence is synthetic", async
   await expect(page.locator("#rows")).toContainText("SYNTHETIC source");
   await expect(page.locator("#rows")).toContainText("source provenance: synthetic");
 });
+
+test("registry page refreshes itself when a new decision lands", async ({ page }) => {
+  // Poll interval is shortened in the page so the test does not wait 20s.
+  await page.addInitScript(() => { window.FEN_REGISTRY_REFRESH_MS = 400; });
+  let calls = 0;
+  await page.route("**/rest/v1/registry_public**", (route) => {
+    calls += 1;
+    const rows = [{
+      item_id: "c1", item_type: "claim", status: "accepted",
+      statement: "first accepted item", quote: "q1", document_id: "d1",
+      reviewer: "reviewer-1", verdict: "accept", comment: "",
+      recorded_at: "2026-11-02T12:00:00Z", model_returned: "muse-spark-1.3",
+      prompt_hash: "sha256:a", quote_verified: true, provenance: "primary",
+    }];
+    if (calls > 1) {
+      rows.push({
+        item_id: "c2", item_type: "claim", status: "accepted",
+        statement: "second accepted item", quote: "q2", document_id: "d2",
+        reviewer: "reviewer-2", verdict: "accept", comment: "",
+        recorded_at: "2026-11-02T12:05:00Z", model_returned: "muse-spark-1.3",
+        prompt_hash: "sha256:b", quote_verified: true, provenance: "primary",
+      });
+    }
+    route.fulfill({ status: 200, contentType: "application/json", headers: CORS, body: JSON.stringify(rows) });
+  });
+  await page.goto(PAGE);
+  await expect(page.locator("#rows")).toContainText("first accepted item");
+  await expect(page.locator("#state")).toContainText("refreshes every");
+  // No reload, no click: the page picks the new row up on its own.
+  await expect(page.locator("#rows")).toContainText("second accepted item", { timeout: 5000 });
+  await expect(page.locator("#state")).toContainText("2 accepted record(s)");
+});
+
+test("a failed refresh keeps the knowledge already on screen", async ({ page }) => {
+  await page.addInitScript(() => { window.FEN_REGISTRY_REFRESH_MS = 400; });
+  let calls = 0;
+  await page.route("**/rest/v1/registry_public**", (route) => {
+    calls += 1;
+    if (calls === 1) {
+      return route.fulfill({
+        status: 200, contentType: "application/json", headers: CORS,
+        body: JSON.stringify([{
+          item_id: "c1", item_type: "claim", status: "accepted",
+          statement: "kept on screen", quote: "q", document_id: "d1",
+          reviewer: "reviewer-1", verdict: "accept", comment: "",
+          recorded_at: "2026-11-02T12:00:00Z", model_returned: "muse-spark-1.3",
+          prompt_hash: "sha256:a", quote_verified: true, provenance: "primary",
+        }]),
+      });
+    }
+    return route.fulfill({ status: 500, contentType: "application/json", headers: CORS, body: "{}" });
+  });
+  await page.goto(PAGE);
+  await expect(page.locator("#rows")).toContainText("kept on screen");
+  await expect(page.locator("#state")).toContainText("Could not refresh", { timeout: 5000 });
+  await expect(page.locator("#rows")).toContainText("kept on screen");
+});

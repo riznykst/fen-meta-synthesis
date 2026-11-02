@@ -401,7 +401,8 @@
       decided, and the <code>decisions</code> table itself. The frontend uses a
       publishable key that is safe to ship precisely because row-level security grants it
       <code>SELECT</code> on that one view and nothing else — reading a base table with
-      it returns <code>401</code>.</p>
+      it returns <code>401</code>. The page re-reads the view every 20 seconds, so a
+      decision recorded in the demo appears there without a reload.</p>
     </details>
     <details>
       <summary>Can a decision be edited or deleted afterwards?</summary>
