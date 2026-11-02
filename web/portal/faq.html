@@ -57,6 +57,7 @@
     <a href="#quotes">Quotes &amp; verification</a>
     <a href="#contradictions">Contradictions</a>
     <a href="#dictionary">Dictionary badges</a>
+    <a href="#datasets">Datasets &amp; EU AI Act</a>
     <a href="#provenance">Provenance, registry &amp; export</a>
     <a href="#candidates">Candidates &amp; community voting</a>
     <a href="#errors">Errors &amp; troubleshooting</a>
@@ -290,6 +291,81 @@
     </details>
   </section>
 
+  <section class="panel" id="datasets">
+    <h2>Datasets — and the EU AI Act walkthrough</h2>
+    <p>The demo switcher offers three presets. Switching replaces the documents in
+    the form; everything else — analyse, quote check, decisions, registry — is the
+    same code path. One engine, three data sets.</p>
+    <table>
+      <tr><th>Preset</th><th>What it contains</th><th>What it is for</th></tr>
+      <tr><td>Demo (synthetic)</td><td>An invented trade-route story</td><td>Nothing to licence; the default</td></tr>
+      <tr><td>Sumerian dictionary entries (ePSD2)</td><td>Verified dictionary excerpts for
+        <code>lu</code>, <code>bahar</code> and <code>me</code> (CC BY-SA 3.0)</td>
+        <td>Lemma extraction and the dictionary badges</td></tr>
+      <tr><td>EU AI Act — public texts (not legal advice)</td><td>Articles 11 and 18 of
+        Regulation (EU) 2024/1689 from EUR-Lex, plus one <b>SYNTHETIC</b> commentary
+        paragraph</td><td>A wrong-attribution case in a regulated domain</td></tr>
+    </table>
+    <details open>
+      <summary>Walkthrough: the wrong-attribution case (about 60 seconds)</summary>
+      <ol>
+        <li>Click <b>EU AI Act — public texts (not legal advice)</b>. The note under the
+        switcher says exactly that, and the third document is titled
+        <em>Industry commentary — SYNTHETIC</em>.</li>
+        <li>Click <b>Analyse documents</b>. The model proposes claims; nothing is decided.</li>
+        <li>Find the claim taken from Article 18: the provider keeps the documentation
+        <em>“for a period ending 10 years after the high-risk AI system has been placed on
+        the market or put into service”</em>. Its quote is verified.</li>
+        <li>Find the claim taken from the commentary: it says <b>Article 11</b> requires
+        the ten-year retention. Its quote is verified too — the words really are in that
+        document — but the card carries a red <b>SYNTHETIC source</b> badge.</li>
+        <li>Click <b>Dispute</b> on the commentary claim and write why: the attribution is
+        wrong, the retention rule is Article 18, and the source is illustrative.</li>
+        <li>Open the <b>Registry</b>: only what a human accepted is there.</li>
+      </ol>
+    </details>
+    <details>
+      <summary>Why can a SYNTHETIC quote still be “verified”?</summary>
+      <p>Because verification answers one question only: <em>do these exact words appear
+      in the document this claim points at?</em> It does not answer “is this true”, “is
+      this authoritative”, or “is the attribution correct” — those are human judgements.
+      The provenance badge is the second, independent signal: it says the document itself
+      is synthetic, secondary, or primary. A verified quote from a synthetic source is a
+      located sentence and nothing more.</p>
+    </details>
+    <details>
+      <summary>Where does the ten-year rule actually live?</summary>
+      <p>In <b>Article 18</b> (“Documentation keeping”). Article 11 (“Technical
+      documentation”) contains no ten-year period at all: it requires the documentation to
+      be drawn up before the system is placed on the market and kept up to date. The
+      dataset keeps the official wording, and a test asserts that <code>10 years</code>
+      appears in the Article 18 text and <b>not</b> in the Article 11 text — so the demo
+      case cannot be quietly faked by editing the documents.</p>
+    </details>
+    <details>
+      <summary>Is the contradiction between Article 18 and the commentary gold-labelled?</summary>
+      <p>No. In one live run the model surfaced that contradiction on its own; it is a
+      <b>model-found item</b>, and <code>gold_contradictions</code> in the dataset is
+      intentionally empty because no human has verified it as a gold label. The model may
+      or may not surface it on another run — do not treat it as guaranteed.</p>
+    </details>
+    <details>
+      <summary>Is this legal advice, or a claim of compliance with the AI Act?</summary>
+      <p>No, on both counts. The texts are public regulation reproduced with attribution
+      (EUR-Lex reuse policy, Commission Decision 2011/833/EU) and labelled “Not legal
+      advice” in the UI. Nothing here claims that an AI system complies with the AI Act,
+      and the demo does not assess conformity with any article.</p>
+    </details>
+    <details>
+      <summary>Can I use my own documents — and what provenance do they get?</summary>
+      <p>Yes: upload a file or type into the fields. Documents you supply are treated as
+      <code>primary</code> by default, so no provenance badge appears — which is honest
+      only if they really are primary sources. The API accepts <code>provenance</code>
+      per document (<code>primary</code>, <code>secondary</code>,
+      <code>synthetic</code>); if you paste a commentary or a summary, say so.</p>
+    </details>
+  </section>
+
   <section class="panel" id="provenance">
     <h2>Provenance, the Registry, and record export</h2>
     <details open>
@@ -302,18 +378,38 @@
     </details>
     <details>
       <summary>Where does accepted knowledge actually go?</summary>
-      <p>In this demo build: into the <b>Registry</b>. Accepted items are listed
-      in the Registry section with their statement, quote, reviewer, and time,
-      and each can be downloaded as a <b>JSON-LD record</b>
+      <p>Into the <b>Registry</b>, and into durable storage. Accepted items are listed
+      with their statement, quote, reviewer, time and the provenance of the source
+      document, and each can be downloaded as a <b>JSON-LD record</b>
       (<code>GET /records/{item_id}</code>) containing the claim, quote, source
-      documents, model and prompt hash, and all decisions — the artefact that a
-      knowledge graph can later ingest unchanged. When the demo is started via
-      <code>scripts/start_demo.py</code>, analyses and decisions are also
-      persisted to an append-only local log (<code>artifacts/store.jsonl</code>),
-      so restarting the demo does not lose your verdicts. Writing decisions into
-      the baseline Kafka → RDF governance pipeline exists in the underlying
-      research prototype but is deliberately not claimed as wired into this
-      hackathon workflow.</p>
+      documents, model and prompt hash, and all decisions — the artefact a knowledge
+      graph can later ingest unchanged.</p>
+      <p>Storage has two layers. Locally, analyses and decisions are appended to a log
+      (<code>artifacts/store.jsonl</code>), so restarting the demo does not lose your
+      verdicts. With <code>SUPABASE_DB_URL</code> set, the same analyses, documents,
+      proposals and decisions are written to the Supabase database (schema in
+      <code>supabase/migrations/</code>), and the public <b>Registry</b> page reads the
+      accepted-knowledge view from there. Writing into the baseline Kafka → RDF
+      governance pipeline exists in the underlying research prototype but is
+      deliberately not claimed as wired into this hackathon workflow.</p>
+    </details>
+    <details>
+      <summary>What exactly is public in the database, and what is not?</summary>
+      <p>Public: the view <code>registry_public</code> — accepted items only, with the
+      statement, quote, reviewer, verdict, time, model, prompt hash, quote-verified flag
+      and source provenance. Private: source-document texts, proposals that no human has
+      decided, and the <code>decisions</code> table itself. The frontend uses a
+      publishable key that is safe to ship precisely because row-level security grants it
+      <code>SELECT</code> on that one view and nothing else — reading a base table with
+      it returns <code>401</code>.</p>
+    </details>
+    <details>
+      <summary>Can a decision be edited or deleted afterwards?</summary>
+      <p>No. Decisions are append-only, and the database enforces it: a trigger refuses
+      <code>UPDATE</code> and <code>DELETE</code> on the decisions table. Deciding again
+      inserts a new row, and the item's current status is resolved from the latest
+      decision. The recorded history therefore shows every verdict, including a later
+      correction — it is not a rewrite of the past.</p>
     </details>
     <details>
       <summary>What is in the downloaded JSON-LD record?</summary>
@@ -428,7 +524,9 @@
       <tr><td>Attestation</td><td>A real occurrence of a form in a corpus text, with a citable source.</td></tr>
       <tr><td>Gold data</td><td>Human-made reference answers for evaluation. Agents never generate gold data here.</td></tr>
       <tr><td>B0 baseline</td><td>The share of proposals with unverified quotes — what would have passed as trustworthy without the verification gate.</td></tr>
-      <tr><td>Registry</td><td>The store of recorded decisions and accepted knowledge (JSONL-backed in the demo launcher).</td></tr>
+      <tr><td>Registry</td><td>The store of recorded decisions and accepted knowledge (a local log in the demo launcher; the Supabase database when configured).</td></tr>
+      <tr><td>Source provenance</td><td>Whether the document a claim cites is a primary text, secondary commentary, or a synthetic illustration. Shown as a badge; never inferred from the claim itself.</td></tr>
+      <tr><td>SYNTHETIC source</td><td>A document written for the demo, not a real publication. Its quotes can be verified (they exist in that document) and still prove nothing about the world.</td></tr>
     </table>
   </section>
 
@@ -443,6 +541,23 @@
       anchors of the baseline are simulations. The hosted website is a static
       interface; the model backend runs locally.
     </div>
+    <details>
+      <summary>What the EU AI Act preset does and does not claim</summary>
+      <p>It reproduces Articles 11 and 18 of Regulation (EU) 2024/1689 with
+      attribution and marks a synthetic commentary as synthetic. It does not give
+      legal advice, does not interpret the Act, and does not claim that any AI system
+      complies with it. The third document is illustrative and is labelled as such in
+      the UI; its quotes are verifiable because the words are in that document, which
+      is exactly why the provenance badge exists.</p>
+    </details>
+    <details>
+      <summary>Why a contradiction is not guaranteed to appear</summary>
+      <p>Contradiction detection is a model capability, not a deterministic check. In a
+      live run the model surfaced the Article 18 vs commentary contradiction; on another
+      run it may not. The dataset's <code>gold_contradictions</code> list is empty
+      because no human verified that item as a gold label. Treat model-found items as
+      proposals like any other.</p>
+    </details>
     <p class="meta" style="margin-top:10px">Rule that never moves: the model only
     proposes. <code>accepted</code> exists only after a recorded human decision.</p>
   </section>

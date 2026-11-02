@@ -45,3 +45,30 @@ test("faq maps classic voting buttons to verdicts and explains QV", () => {
 test("faq contains no script tags (static, zero-build)", () => {
   assert.ok(!/<script/i.test(html));
 });
+
+test("faq documents the three datasets and the EU AI Act walkthrough", () => {
+  assert.match(html, /id="datasets"/);
+  assert.match(html, /href="#datasets"/);
+  for (const term of [
+    "EU AI Act",
+    "public texts",
+    "Not legal",
+    "SYNTHETIC source",
+    "Article 18",
+    "Article 11",
+    "10 years",
+    "model-found item",
+    "gold_contradictions",
+  ]) {
+    assert.ok(html.includes(term), "missing " + term);
+  }
+  assert.match(html, /Walkthrough: the wrong-attribution case/);
+});
+
+test("faq explains the durable registry and what stays private", () => {
+  assert.match(html, /registry_public/);
+  assert.match(html, /publishable key/);
+  assert.match(html, /401/);
+  assert.match(html, /SELECT<\/code> on that one view/);
+  assert.match(html, /refuses\s+<code>UPDATE<\/code> and <code>DELETE<\/code>/);
+});
