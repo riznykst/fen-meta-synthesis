@@ -285,3 +285,34 @@ test("claim cards show the provenance badge only for non-primary sources", () =>
   const primary = R.renderClaimCard({ ...base, provenance: "primary" }, []);
   assert.doesNotMatch(primary, /SYNTHETIC source/);
 });
+
+test("evidenceStrengthHtml: a verified quote with uncertain support is called out", () => {
+  // No warning for a confidently supported claim, nor for unverified ones
+  // (those already say "Quote NOT verified").
+  assert.strictEqual(R.evidenceStrengthHtml({ provenance_status: "traced_supported" }), "");
+  assert.strictEqual(R.evidenceStrengthHtml({ provenance_status: "unsupported", quote_verified: false }), "");
+  assert.strictEqual(R.evidenceStrengthHtml(null), "");
+
+  const uncertain = R.evidenceStrengthHtml({
+    provenance_status: "traced_uncertain", uncertainty: "insufficient_evidence",
+  });
+  assert.match(uncertain, /Quote found — support uncertain/);
+  assert.match(uncertain, /insufficient_evidence/);
+  assert.match(uncertain, /location is verified, meaning is not/);
+});
+
+test("claim card with uncertain support keeps Accept possible but warns", () => {
+  const claim = {
+    claim_id: "c3", quote: "The technical documentation shall be drawn up",
+    statement: "Article 11 requires ten-year retention",
+    interpretation: "i", document_id: "d1", ambiguities: [],
+    uncertainty: "insufficient_evidence", quote_verified: true,
+    provenance_status: "traced_uncertain",
+  };
+  const html = R.renderClaimCard(claim, []);
+  assert.match(html, /Quote found — support uncertain/);
+  assert.match(html, /Quote verified in source/);
+  // The human still decides — the warning is information, not a lock.
+  assert.doesNotMatch(html, /data-verdict="accept"[^>]*disabled/);
+  assert.strictEqual(R.canAccept(claim), true);
+});

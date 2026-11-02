@@ -63,6 +63,8 @@ test("faq documents the three datasets and the EU AI Act walkthrough", () => {
     assert.ok(html.includes(term), "missing " + term);
   }
   assert.match(html, /Walkthrough: the wrong-attribution case/);
+  assert.match(html, /support uncertain/);
+  assert.match(html, /location and meaning are\s+different things/);
 });
 
 test("faq explains the durable registry and what stays private", () => {

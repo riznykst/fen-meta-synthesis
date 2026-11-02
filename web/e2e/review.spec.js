@@ -130,3 +130,30 @@ test.beforeEach(async ({ page }) => {
     })
   );
 });
+
+test("a verified quote whose support is uncertain is flagged on the card", async ({ page }) => {
+  const analysis = JSON.parse(JSON.stringify(ANALYSIS));
+  analysis.analysis.claims = [{
+    claim_id: "c3",
+    quote: "The technical documentation shall be drawn up before that system is placed on the market",
+    statement: "Article 11 requires ten-year retention",
+    interpretation: "Retention claim attributed to Article 11.",
+    document_id: "d1", ambiguities: [], uncertainty: "insufficient_evidence",
+    review_recommendation: "needs_expert_review",
+    quote_verified: true, provenance_status: "traced_uncertain",
+  }];
+  analysis.provenance_check = { claims_total: 1, quotes_verified: 1, problems: [], ok: true };
+
+  await page.route("**/analyze", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", headers: CORS, body: JSON.stringify(analysis) })
+  );
+  await page.goto(REVIEW);
+  await page.click("#analyzeBtn");
+  const card = page.locator("article[data-item='c3']");
+  await expect(card).toContainText("Quote verified in source");
+  // Matched loosely so the assertion does not depend on the dash glyph.
+  await expect(card).toContainText(/Quote found\s+\S+\s+support uncertain/);
+  await expect(card).toContainText("location is verified, meaning is not");
+  // Information, not a lock: the reviewer can still accept or reject.
+  await expect(card.locator("[data-verdict='accept']")).toBeEnabled();
+});

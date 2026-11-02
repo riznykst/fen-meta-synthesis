@@ -251,6 +251,7 @@
       + '<p class="meta">Uncertainty: ' + esc(claim.uncertainty) + " · provenance: " + esc(claim.provenance_status || "") + "</p>"
       + (amb.length ? '<p class="meta">Ambiguities: ' + amb.map(esc).join("; ") + "</p>" : "")
       + quoteNote
+      + evidenceStrengthHtml(claim)
       + provenanceBadgeHtml(claim.provenance)
       + renderConsensusHtml(claim.claim_id, decisions)
       + dictionaryBadgeHtml(claim)
@@ -305,6 +306,19 @@
   // surfaced: evidence drawn from an illustrative source must be obvious
   // before the reviewer decides.
   var PROVENANCE_LABELS = { synthetic: "SYNTHETIC source", secondary: "SECONDARY source" };
+
+  // "Quote verified" answers only "do these words exist". When the model
+  // itself flags the reading as uncertain (high / insufficient_evidence), the
+  // green badge must not be the last word on the card — say so explicitly.
+  function evidenceStrengthHtml(claim) {
+    if (!claim || claim.provenance_status !== "traced_uncertain") return "";
+    var level = String(claim.uncertainty || "uncertain");
+    return '<p class="evidence-strength">'
+      + '<span class="badge b-gd">Quote found — support uncertain</span> '
+      + '<span class="meta">the words exist in the document, but the model flagged this '
+      + "reading as <b>" + esc(level) + "</b>. Read the quote yourself before accepting: "
+      + "location is verified, meaning is not.</span></p>";
+  }
 
   function provenanceBadgeHtml(provenance) {
     var key = String(provenance || "");
@@ -398,6 +412,7 @@
     findQuoteRange: findQuoteRange,
     highlightQuoteHtml: highlightQuoteHtml,
     provenanceBadgeHtml: provenanceBadgeHtml,
+    evidenceStrengthHtml: evidenceStrengthHtml,
     dictionaryEntryForClaim: dictionaryEntryForClaim,
     dictionaryBadgeHtml: dictionaryBadgeHtml,
     DICTIONARY_ENTRIES: DICTIONARY_ENTRIES,
