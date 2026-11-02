@@ -251,6 +251,7 @@
       + '<p class="meta">Uncertainty: ' + esc(claim.uncertainty) + " · provenance: " + esc(claim.provenance_status || "") + "</p>"
       + (amb.length ? '<p class="meta">Ambiguities: ' + amb.map(esc).join("; ") + "</p>" : "")
       + quoteNote
+      + provenanceBadgeHtml(claim.provenance)
       + renderConsensusHtml(claim.claim_id, decisions)
       + dictionaryBadgeHtml(claim)
       + (status === "accepted"
@@ -299,6 +300,23 @@
     }).join("");
   }
 
+  // Provenance of the SOURCE document behind a claim (primary / secondary /
+  // synthetic), echoed by the analysis service. Only non-primary values are
+  // surfaced: evidence drawn from an illustrative source must be obvious
+  // before the reviewer decides.
+  var PROVENANCE_LABELS = { synthetic: "SYNTHETIC source", secondary: "SECONDARY source" };
+
+  function provenanceBadgeHtml(provenance) {
+    var key = String(provenance || "");
+    var label = PROVENANCE_LABELS[key];
+    if (!label) return "";
+    var cls = key === "synthetic" ? "b-rd" : "b-gd";
+    var why = key === "synthetic" ? "synthetic, illustrative" : "secondary";
+    return '<p class="prov-badge"><span class="badge ' + cls + '">' + esc(label)
+      + '</span> <span class="meta">this claim\u2019s evidence comes from a ' + why
+      + " document — not a primary source</span></p>";
+  }
+
   // Dictionary entries verified against ePSD2 for the Sumerian candidate
   // lemmas (eval/candidates/sumerian-video-candidates.json; CC BY-SA 3.0,
   // attribution in eval/dataset/SOURCES.md). Used only to badge a proposal
@@ -327,8 +345,7 @@
     },
   ];
 
-  function dictionaryEntryForClaim(claim) {
-    if (!claim) return null;
+  function dictionaryEntryForClaim(claim) {    if (!claim) return null;
     var haystack = (" " + String(claim.quote || "") + " " + String(claim.statement || "")
       + " " + String(claim.interpretation || "") + " ").toLowerCase();
     for (var i = 0; i < DICTIONARY_ENTRIES.length; i++) {
@@ -380,6 +397,7 @@
     renderDecisionHistory: renderDecisionHistory,
     findQuoteRange: findQuoteRange,
     highlightQuoteHtml: highlightQuoteHtml,
+    provenanceBadgeHtml: provenanceBadgeHtml,
     dictionaryEntryForClaim: dictionaryEntryForClaim,
     dictionaryBadgeHtml: dictionaryBadgeHtml,
     DICTIONARY_ENTRIES: DICTIONARY_ENTRIES,
@@ -731,11 +749,19 @@
 
   async function runAnalyze() {
     var docs = [];
+    var provenance = global.FEN_DOC_PROVENANCE || {};
     [1, 2, 3].forEach(function (n) {
       var field = $("doc" + n);
       if (!field) return;
       var text = field.value.trim();
-      if (text) docs.push({ document_id: "d" + n, title: $("doc" + n + "Title").value.trim() || null, text: text });
+      if (text) {
+        docs.push({
+          document_id: "d" + n,
+          title: $("doc" + n + "Title").value.trim() || null,
+          text: text,
+          provenance: provenance["d" + n] || "primary",
+        });
+      }
     });
     $("reviewError").textContent = "";
     if (!docs.length) {

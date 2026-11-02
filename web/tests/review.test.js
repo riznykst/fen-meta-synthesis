@@ -257,3 +257,31 @@ test("errorMessage: 502 is understandable and non-technical first", () => {
   assert.match(R.errorMessage(409), /cannot be accepted/);
   assert.match(R.errorMessage(422, "bad input"), /bad input/);
 });
+
+test("provenanceBadgeHtml: synthetic sources are surfaced, primary is not", () => {
+  assert.strictEqual(R.provenanceBadgeHtml("primary"), "");
+  assert.strictEqual(R.provenanceBadgeHtml(null), "");
+  assert.strictEqual(R.provenanceBadgeHtml(undefined), "");
+
+  const synthetic = R.provenanceBadgeHtml("synthetic");
+  assert.match(synthetic, /SYNTHETIC source/);
+  assert.match(synthetic, /not a primary source/);
+
+  const secondary = R.provenanceBadgeHtml("secondary");
+  assert.match(secondary, /SECONDARY source/);
+
+  const evil = R.provenanceBadgeHtml("<script>");
+  assert.strictEqual(evil, "");
+});
+
+test("claim cards show the provenance badge only for non-primary sources", () => {
+  const base = {
+    claim_id: "c1", quote: "q", statement: "s", interpretation: "i",
+    document_id: "d1", ambiguities: [], uncertainty: "low",
+    quote_verified: true, provenance_status: "traced_supported",
+  };
+  const synthetic = R.renderClaimCard({ ...base, provenance: "synthetic" }, []);
+  assert.match(synthetic, /SYNTHETIC source/);
+  const primary = R.renderClaimCard({ ...base, provenance: "primary" }, []);
+  assert.doesNotMatch(primary, /SYNTHETIC source/);
+});

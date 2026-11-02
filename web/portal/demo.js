@@ -49,6 +49,49 @@
         },
       ],
     },
+    // Public regulation texts (EUR-Lex) + one clearly synthetic commentary.
+    // The texts below are copies of eval/dataset/eu-ai-act/sources/*.md — a
+    // Node test keeps them in sync. Not legal advice.
+    "eu-ai-act": {
+      label: "EU AI Act — public texts (not legal advice)",
+      note: "Public EU AI Act texts. Not legal advice. Articles 11 and 18 from EUR-Lex (Regulation (EU) 2024/1689); the third document is SYNTHETIC commentary written to illustrate a common attribution error.",
+      docs: [
+        {
+          title: "Article 11 — Technical documentation (EUR-Lex)",
+          provenance: "primary",
+          text:
+            "Article 11\n\nTechnical documentation\n\n" +
+            "1.   The technical documentation of a high-risk AI system shall be drawn up before that system is placed on the market or put into service and shall be kept up-to date.\n\n" +
+            "The technical documentation shall be drawn up in such a way as to demonstrate that the high-risk AI system complies with the requirements set out in this Section and to provide national competent authorities and notified bodies with the necessary information in a clear and comprehensive form to assess the compliance of the AI system with those requirements. It shall contain, at a minimum, the elements set out in Annex IV. SMEs, including start-ups, may provide the elements of the technical documentation specified in Annex IV in a simplified manner. To that end, the Commission shall establish a simplified technical documentation form targeted at the needs of small and microenterprises. Where an SME, including a start-up, opts to provide the information required in Annex IV in a simplified manner, it shall use the form referred to in this paragraph. Notified bodies shall accept the form for the purposes of the conformity assessment.\n\n" +
+            "2.   Where a high-risk AI system related to a product covered by the Union harmonisation legislation listed in Section A of Annex I is placed on the market or put into service, a single set of technical documentation shall be drawn up containing all the information set out in paragraph 1, as well as the information required under those legal acts.\n\n" +
+            "3.   The Commission is empowered to adopt delegated acts in accordance with Article 97 in order to amend Annex IV, where necessary, to ensure that, in light of technical progress, the technical documentation provides all the information necessary to assess the compliance of the system with the requirements set out in this Section.",
+        },
+        {
+          title: "Article 18 — Documentation keeping (EUR-Lex)",
+          provenance: "primary",
+          text:
+            "Article 18\n\nDocumentation keeping\n\n" +
+            "1.   The provider shall, for a period ending 10 years after the high-risk AI system has been placed on the market or put into service, keep at the disposal of the national competent authorities:\n\n" +
+            "(a)\n\nthe technical documentation referred to in Article 11;\n\n" +
+            "(b)\n\nthe documentation concerning the quality management system referred to in Article 17;\n\n" +
+            "(c)\n\nthe documentation concerning the changes approved by notified bodies, where applicable;\n\n" +
+            "(d)\n\nthe decisions and other documents issued by the notified bodies, where applicable;\n\n" +
+            "(e)\n\nthe EU declaration of conformity referred to in Article 47.\n\n" +
+            "2.   Each Member State shall determine conditions under which the documentation referred to in paragraph 1 remains at the disposal of the national competent authorities for the period indicated in that paragraph for the cases when a provider or its authorised representative established on its territory goes bankrupt or ceases its activity prior to the end of that period.\n\n" +
+            "3.   Providers that are financial institutions subject to requirements regarding their internal governance, arrangements or processes under Union financial services law shall maintain the technical documentation as part of the documentation kept under the relevant Union financial services law.",
+        },
+        {
+          title: "Industry commentary — SYNTHETIC",
+          provenance: "synthetic",
+          text:
+            "SYNTHETIC. Written for the demo to illustrate a common attribution error. Not a real commentary, not legal advice.\n\n" +
+            "A frequent misreading of the AI Act concerns how long documentation must be kept.\n\n" +
+            "1. The Act requires a quality management system for high-risk systems.\n" +
+            "2. Article 11 requires the technical documentation to be kept for 10 years after the system has been placed on the market.\n" +
+            "3. Providers should therefore plan a ten-year archiving period from day one.",
+        },
+      ],
+    },
   };
 
   function datasetIds() {
@@ -61,7 +104,9 @@
     return {
       label: ds.label,
       note: ds.note,
-      docs: ds.docs.map(function (d) { return { title: d.title, text: d.text }; }),
+      docs: ds.docs.map(function (d) {
+        return { title: d.title, text: d.text, provenance: d.provenance || "primary" };
+      }),
     };
   }
 
@@ -73,8 +118,18 @@
       var doc = ds.docs[n - 1];
       values["doc" + n + "Title"] = doc ? doc.title : "";
       values["doc" + n] = doc ? doc.text : "";
+      values["doc" + n + "Provenance"] = (doc && doc.provenance) || "primary";
     });
     return values;
+  }
+
+  /** document_id -> provenance for the documents currently in the form. */
+  function provenanceMapFromValues(values) {
+    var map = {};
+    [1, 2, 3].forEach(function (n) {
+      map["d" + n] = (values && values["doc" + n + "Provenance"]) || "primary";
+    });
+    return map;
   }
 
   // ------------------------------------------------------------ upload ----
@@ -167,6 +222,7 @@
     datasetIds: datasetIds,
     getDataset: getDataset,
     datasetFieldValues: datasetFieldValues,
+    provenanceMapFromValues: provenanceMapFromValues,
     parseUploadedFile: parseUploadedFile,
     uploadSizeError: uploadSizeError,
     renderRegistryHtml: renderRegistryHtml,
@@ -190,11 +246,18 @@
       if ($("doc" + n)) $("doc" + n).value = doc ? doc.text : "";
       if ($("doc" + n + "Title")) $("doc" + n + "Title").value = doc ? doc.title : "";
     });
+    // Provenance of each document (primary / secondary / synthetic) travels
+    // with the analysis request so the reviewer sees it on every claim.
+    var provenance = {};
+    [1, 2, 3].forEach(function (n) {
+      provenance["d" + n] = (docs[n - 1] && docs[n - 1].provenance) || "primary";
+    });
+    global.FEN_DOC_PROVENANCE = provenance;
     var showThird = docs.length > 2;
     if ($("doc3Block")) $("doc3Block").style.display = showThird ? "block" : "none";
     if ($("addDocBtn")) $("addDocBtn").style.display = showThird ? "none" : "";
     if ($("datasetNote")) $("datasetNote").textContent = note || "";
-    ["synthetic", "sumerian"].forEach(function (key) {
+    ["synthetic", "sumerian", "eu-ai-act"].forEach(function (key) {
       var btn = $("dataset-" + key);
       if (btn) btn.classList.toggle("active", key === activeDataset);
     });
@@ -255,7 +318,7 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
-    ["synthetic", "sumerian"].forEach(function (key) {
+    datasetIds().forEach(function (key) {
       var btn = $("dataset-" + key);
       if (btn) btn.addEventListener("click", function () { applyDataset(key); });
     });

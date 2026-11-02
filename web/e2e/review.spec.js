@@ -117,3 +117,16 @@ test("review flow: proposals, unverified lockout, highlight, human decision", as
   await expect(page.locator("#provenance")).toContainText("sha256:e2e");
   await expect(page.locator("#provenance")).toContainText("muse-spark-1.3");
 });
+
+// The page joins the newest analysis already on the server ("shared thread").
+// Tests must start from a known state, so the analysis list is stubbed empty.
+test.beforeEach(async ({ page }) => {
+  await page.route("**/analyses**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      headers: CORS,
+      body: JSON.stringify({ analyses: [] }),
+    })
+  );
+});
