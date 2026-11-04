@@ -266,6 +266,16 @@ test("orderByNeed: items decided by others come first for me", () => {
   );
 });
 
+test("errorMessage: 504 explains the serverless time limit and asks for a retry", () => {
+  // Vercel Hobby caps a function at 60 s; a slow model answer looks like a
+  // platform timeout. The message must say that, not blame the model.
+  const msg = R.errorMessage(504);
+  assert.match(msg, /did not finish in time/i);
+  assert.match(msg, /60 seconds/);
+  assert.match(msg, /Nothing was saved/);
+  assert.match(msg, /again/i);
+});
+
 test("errorMessage: 502 is understandable and non-technical first", () => {
   const msg = R.errorMessage(502);
   assert.match(msg, /model did not respond/i);

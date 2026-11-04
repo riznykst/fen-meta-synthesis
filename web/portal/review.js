@@ -226,6 +226,17 @@
   }
 
   function errorMessage(status, detail) {
+    if (status === 504) {
+      // The hosted build runs on Vercel Hobby, which caps a function at 60 s.
+      // A slow model answer therefore surfaces as a platform timeout, not as a
+      // model error — say that plainly and tell the person what to do.
+      return "The analysis did not finish in time (error 504). The hosted demo allows 60 seconds "
+        + "per request, and the model was slower than that. Nothing was saved — no proposal was created. "
+        + "Press “Analyse documents” again; a retry normally completes in about 20 seconds.";
+    }
+    if (status === 429) {
+      return "Too many requests in a short window (error 429). Wait a few seconds, then try again.";
+    }
     if (status === 502) {
       // The server tells us WHICH 502 it is; a generic "the model did not
       // respond" hid a missing API key once and cost more time than the fix.

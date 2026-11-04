@@ -2,6 +2,34 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-11-05 — frozen submission build (Meta Global AI Developer Hackathon)
+
+Submission state for the hackathon entry. From here the repository is frozen:
+no functional changes without a new entry, and the deployed build is the one the
+submission links to.
+
+**What the hosted build is.** `https://fen-meta-synthesis.vercel.app/demo` runs
+the same analysis code as the local demo, but inside a Vercel Python function
+(`api/index.py` → `mock_fen_api/serverless.py`). State lives in Supabase, because
+a serverless function shares no memory between requests: `analyses`,
+`analysis_documents`, `items` and append-only `decisions`, with `registry_public`
+as the only surface the browser may read.
+
+**Measured on the live deployment** (2 runs, 2 documents each): 21.9 s and
+28.5 s per analysis, against a 60 s limit on the Hobby plan. The limit is real,
+so a slow model answer surfaces as `504` instead of a model error; the UI now
+says exactly that and asks for one retry, which normally takes ~20 s. Raising
+`maxDuration` in `vercel.json` to 300 on a Pro plan needs no code change.
+
+**Verified before freezing.** Upload → parse with Meta on the live site (400-char
+custom text, 4 claims, 21 s); preset analysis (12 claims, 12/12 quotes located);
+registry with real vote counts; browser console clean; 219 pytest + 117 Node
+tests.
+
+**Not claimed.** The video was recorded against the local backend before the
+serverless deploy existed, and says so in `SUBMISSION.md`. The caught-fabrication
+path is covered by tests and the synthetic fixture, not by a frame in the video.
+
 ## 2026-09-19 — v0.2.8: positioning corrected, SKG-IF extension staged, CI honesty guards
 
 Patch release: **no application code changed** — the pipeline, the `gfen:`
