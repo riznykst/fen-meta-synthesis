@@ -4,11 +4,17 @@
 
 **Live demo: https://fen-meta-synthesis.vercel.app/demo** — the simplified
 one-screen demo (sources → proposals → quote check → your decision); the full
-Review screen is at `/review`. It runs end to end on Vercel: a Python function
-calls the Meta Model API and stores analyses, items and human verdicts in
-Supabase, so nothing needs to be started locally.
+Review screen is at `/review`, the public registry of accepted knowledge at
+`/registry`, and the user wiki at `/faq`. It runs end to end on Vercel: a Python
+function at `api/index.py` calls the Meta Model API and stores analyses, items
+and human verdicts in Supabase, so nothing needs to be started locally.
 
 **Demo video (1:56): https://youtu.be/f77s4HoNH9M**
+
+Three datasets ship with the demo: a synthetic trade-route story, ePSD2
+dictionary excerpts for Sumerian lemmas, and EU AI Act Articles 11, 12 and 18
+from EUR-Lex (the demo uses 11 and 18) with one clearly SYNTHETIC commentary
+paragraph — see [Datasets](#datasets).
 
 Prefer to run it on your machine? `python scripts/start_demo.py` brings up the
 same API against a local JSONL store — see [DEMO.md](DEMO.md).
@@ -21,7 +27,7 @@ to a human reviewer. The reviewer accepts, rejects, or disputes each item,
 and the decision is recorded together with the source, the model, and the
 prompt that produced the proposal.
 
-Status: work in progress during the hackathon. See
+Status: hackathon submission build (4 November 2026). See
 [Project status](#project-status) for what is implemented, what is planned,
 and what remains simulated.
 
@@ -79,17 +85,17 @@ pipeline, which is **not** wired into the hackathon decisions yet.
 ```mermaid
 flowchart LR
     subgraph IN["1 · Input"]
-        DOC["Source documents<br/>paste · upload (.txt/.md/.json) ·<br/>synthetic or ePSD2 datasets"]
+        DOC["Source documents<br/>paste · upload (.txt/.md/.json) ·<br/>synthetic, ePSD2 or EU AI Act presets"]
     end
     subgraph DEMO["Demo (this repository)"]
         UI["Simplified demo UI<br/>web/portal/demo.html"]
-        API["Demo API · FastAPI :8100<br/>mock_fen_api/main.py"]
+        API["Demo API · FastAPI :8100 (local)<br/>api/index.py (Vercel function)<br/>mock_fen_api/main.py"]
         SVC["Analysis service<br/>services/common/analyze.py"]
         CONTRACT["Structured contract<br/>services/common/analysis.py<br/>schemas/analysis/"]
         CHECK["Deterministic checks<br/>parse_analysis · verify_provenance"]
-        STORE[("Registry store<br/>JSONL · artifacts/store.jsonl<br/>(when launched via start_demo.py)")]
+        STORE[("Registry store<br/>Supabase · analyses, items, decisions<br/>(local: JSONL artifacts/store.jsonl)")]
         EXP["Record export<br/>GET /records/{id} · JSON-LD"]
-        REG["Registry showcase<br/>accepted knowledge in the UI"]
+        REG["Public registry view<br/>registry_public → /registry page"]
     end
     META["Meta Model API<br/>muse-spark-1.3<br/>services/common/llm.py"]
     HUMAN{"Human reviewer<br/>accept · reject · dispute"}
@@ -117,7 +123,11 @@ flowchart LR
 | Analysis workflow (prompt → parse → provenance) | [services/common/analyze.py](services/common/analyze.py), [services/common/analysis.py](services/common/analysis.py) | Done |
 | Meta client (retries, JSON mode, structured output, usage capture) | [services/common/llm.py](services/common/llm.py), [docs/PROVIDERS.md](docs/PROVIDERS.md) | Done |
 | Demo API (`/analyze`, `/decisions`, `/provenance`, `/registry`, `/records`) | [mock_fen_api/main.py](mock_fen_api/main.py), [decisions.py](mock_fen_api/decisions.py), [store.py](mock_fen_api/store.py) | Done |
-| Decision persistence across restarts (JSONL append-only) | `artifacts/store.jsonl` via `FEN_STORE_PATH` ([scripts/start_demo.py](scripts/start_demo.py)) | Done (demo scope) |
+| Serverless entry for the live site (same app, routed via `?r=/analyze`) | [api/index.py](api/index.py), [mock_fen_api/serverless.py](mock_fen_api/serverless.py) | Done |
+| Durable registry: schema, RLS, append-only decisions, `record_decision()` | [supabase/migrations/](supabase/migrations/), [supabase/README.md](supabase/README.md) | Applied |
+| Public registry page (accepted knowledge only, publishable key) | [web/portal/registry.html](web/portal/registry.html), [web/shared/supabase.js](web/shared/supabase.js) | Done |
+| Source provenance (primary / secondary / synthetic) end to end | [services/common/analysis.py](services/common/analysis.py), migration `0003` | Done |
+| Decision persistence across restarts (JSONL append-only) | `artifacts/store.jsonl` via `FEN_STORE_PATH` ([scripts/start_demo.py](scripts/start_demo.py)) | Done (local demo scope) |
 | Evaluation harness (metrics, B0 baseline, provider comparison) | [eval/run_eval.py](eval/run_eval.py), [eval/REPORT.md](eval/REPORT.md) | Done; corpus runs Planned |
 | Lemma candidates checked against ePSD2 | [eval/candidates/](eval/candidates/sumerian-video-candidates.json), [eval/dataset/SOURCES.md](eval/dataset/SOURCES.md) | Done; gold dataset Planned |
 | Baseline Kafka → RDF → PID pipeline | `services/fen_bridge/`, `services/validation_consumer/`, `services/status_api/` | Done (baseline); integration with decisions Planned |
@@ -149,10 +159,13 @@ python eval/run_eval.py --provider fixture  # offline SYNTHETIC smoke
 docker compose up
 ```
 
-Deployment: the static web layer is deployed by Vercel from this
-repository (`vercel.json` rewrites; live demo at
-https://fen-meta-synthesis.vercel.app/demo). The Python backend runs
-locally for the demo; no public backend is claimed.
+Deployment: Vercel serves the static web layer (`vercel.json` rewrites) **and**
+the serverless demo API ([api/index.py](api/index.py)), which reads the Meta key
+and the Supabase connection from Vercel environment variables. The same code
+also runs locally (`python scripts/start_demo.py`) against a JSONL store, which
+is what the offline test suite uses. The public surface is read-only: the
+publishable key can select from the `registry_public` view only — source texts
+and undecided proposals stay private (see [supabase/README.md](supabase/README.md)).
 
 ## What is new in this hackathon
 
@@ -163,6 +176,10 @@ locally for the demo; no public backend is claimed.
 | Provenance checks | Verbatim quote verification and contradiction integrity checks ([services/common/analyze.py](services/common/analyze.py)) |
 | Review screen | A lightweight review interface built on the existing static portal ([web/portal/review.html](web/portal/review.html)) |
 | Decision trail | Recording of reviewer decisions and a provenance chain from source to decision (`POST /decisions`, `GET /provenance/{item_id}`) |
+| Durable registry | Supabase schema with row-level security, append-only decisions enforced by a trigger, and a server-side `record_decision()` that refuses to accept an unverified quote ([supabase/](supabase/)) |
+| Public registry surface | `/registry` page reading the accepted-knowledge view with a publishable key; source texts and undecided proposals stay private |
+| Source provenance | Documents declare `primary` / `secondary` / `synthetic`; the claim inherits it, the database stores it, the UI badges it |
+| Second domain | EU AI Act Articles 11/12/18 from EUR-Lex plus a SYNTHETIC commentary, used to show a real wrong-attribution case ([Datasets](#datasets)) |
 | Evaluation | An evaluation runner and report ([eval/](eval/)) over a human-labelled test set once the human supplies it |
 
 ## Project status
@@ -180,13 +197,16 @@ only as a stand-in.
 | Live call to the Meta Model API through FEN | Done — verified live on 2026-10-28 (`muse-spark-1.3`); artifacts local pending human-reviewed commit |
 | `POST /analyze` endpoint | Done |
 | Review screen | Done |
-| Decision recording and provenance endpoint | Done (JSONL-persistent demo registry via `start_demo.py`; in-memory otherwise) |
+| Decision recording and provenance endpoint | Done — Supabase on the live site, append-only JSONL when run locally |
+| Public registry of accepted knowledge (`/registry`) | Done — reads the `registry_public` view; auto-refreshes every 20 s |
+| Source provenance (primary / secondary / synthetic) | Done — per document, echoed on each claim, persisted, badged in the UI |
+| EU AI Act dataset (Articles 11/12/18 from EUR-Lex + SYNTHETIC commentary) | Done as a demo dataset; gold example is a draft pending human verification |
 | Evaluation harness and B0 baseline | Done |
 | Evaluation on the human-labelled corpus; Baseten B1 comparison | Planned — awaiting dataset (T8) and provider access |
 
 This table is updated with every task commit. Nothing is listed as done
 without a test or a reproducible run. Current suites in this repository:
-**218 pytest + 116 Node tests + Playwright e2e (Review, Demo, Registry,
+**218 pytest + 116 Node tests + Playwright e2e (Demo, Review, Registry, FAQ,
 Candidate)**, all passing (baseline was 125 + 18). The one Playwright test
 that needs the full pre-hackathon pipeline (webhook + Kafka) skips itself
 with an explicit reason when that stack is not running.
@@ -227,7 +247,7 @@ Three-minute demo (no Docker, no Kafka needed):
 
 ```bash
 python scripts/start_demo.py
-# open http://127.0.0.1:8082/web/portal/review.html and follow DEMO.md
+# open http://127.0.0.1:8082/web/portal/demo.html and follow DEMO.md
 ```
 
 Full stack (Kafka, Fuseki, services, portal):
@@ -276,14 +296,35 @@ harness has been run on a clearly labelled synthetic smoke example only;
 **no corpus figures are reported until they are measured** on the
 human-supplied dataset.
 
+## Datasets
+
+Three presets ship with the demo; switching one replaces the documents in the
+form, and the rest of the pipeline is identical.
+
+| Preset | What it contains | Licence |
+|---|---|---|
+| Demo (synthetic) | An invented trade-route story | none needed — SYNTHETIC |
+| Sumerian dictionary entries (ePSD2) | Verified excerpts for `lu`, `bahar`, `me` | CC BY-SA 3.0 (Oracc) |
+| EU AI Act — public texts (not legal advice) | Articles 11, 12, 18 of Regulation (EU) 2024/1689 + one SYNTHETIC commentary | EUR-Lex reuse policy (Commission Decision 2011/833/EU) with attribution |
+
+The EU AI Act preset exists to demonstrate a wrong attribution: the
+commentary repeats a ten-year retention rule that belongs to Article 18 but
+attributes it to Article 11. The verified texts contain no such rule in
+Article 11, and a test asserts exactly that (`web/tests/demo.test.js`), so the
+case cannot be faked by editing the documents. `eval/dataset/eu-ai-act/example.json`
+is a **draft** gold example — the quotes are verbatim, but the gold claims still
+need human confirmation.
+
 ## Repository layout
 
 ```text
 services/common/        LLM client, analysis contract, provenance checks
 mock_fen_api/           API for the demo, including scaffolding
+api/                    Vercel serverless entrypoint for the same app
+supabase/               Migrations (schema, RLS, provenance) and access model
 schemas/kafka-events/   Existing event schemas (unchanged)
 schemas/analysis/       New analysis schemas (generated from the models)
-web/                    Static portal and review screen
+web/                    Static portal, review screen, public registry, wiki
 eval/                   Test set, runner, and report
 tests/                  pytest suite
 docs/                   ADRs, provider notes
@@ -310,20 +351,38 @@ docs/                   ADRs, provider notes
   punctuation-sensitive in its exact form (a token-overlap rule is used
   only for evaluation matching).
 - Voting and reputation mechanisms from the baseline remain simulated.
-- The hackathon decision registry is a demo-scope JSONL store when
-  launched via `scripts/start_demo.py` (in-memory otherwise), and
-  decisions are published to a demo event log / injectable publisher —
-  wiring them into the Kafka governance pipeline is not claimed.
+- Decisions live in Supabase on the live site (or in an append-only JSONL log
+  locally, and in memory when neither is configured), and are published to a
+  demo event log / injectable publisher — wiring them into the Kafka governance
+  pipeline is not claimed. Decisions are append-only: the database refuses
+  `UPDATE`/`DELETE`, so a correction is a new row, not an edit.
+- **The EU AI Act material is not legal advice.** Articles 11, 12 and 18 are
+  reproduced from EUR-Lex with attribution; nothing here claims conformity with
+  the Act or interprets it. The third document in that preset is a SYNTHETIC
+  commentary written to demonstrate a wrong attribution, and the UI labels it
+  as such.
+- Quote verification proves that a quote exists in the cited document, not that
+  the statement follows from it. When the model itself flags the reading as
+  uncertain, the card says so (`Quote found — support uncertain`) instead of
+  showing only a green badge.
 - Live-response artifacts are kept local until a human reviews them for
   commit.
 
 ## Data and licensing
 
 Source texts and licences are registered in
-[eval/dataset/SOURCES.md](eval/dataset/SOURCES.md). That register exists;
-the human-supplied corpus texts themselves are not in the repository yet
-(the dataset gate is [eval/validate_dataset.py](eval/validate_dataset.py)).
-Check each source's license before reuse.
+[eval/dataset/SOURCES.md](eval/dataset/SOURCES.md). Two kinds of material live
+here:
+
+- **Public regulation** — Articles 11, 12 and 18 of Regulation (EU) 2024/1689,
+  reproduced verbatim from EUR-Lex with the attribution the reuse policy
+  requires ([eval/dataset/eu-ai-act/sources/SOURCES.md](eval/dataset/eu-ai-act/sources/SOURCES.md)).
+  The accompanying commentary is SYNTHETIC and labelled as such, in the file,
+  in the UI and in `example.json`.
+- **The human-supplied corpus** (Sumerian texts for evaluation) is **not** in
+  the repository yet: the agent does not invent corpus data, and the dataset
+  gate is [eval/validate_dataset.py](eval/validate_dataset.py). Check each
+  source's licence before reuse.
 
 ## License
 

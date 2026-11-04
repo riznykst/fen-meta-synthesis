@@ -27,6 +27,30 @@ def test_chat_completion_success():
     assert kwargs["json"]["messages"][0]["role"] == "system"
 
 
+def test_reasoning_effort_is_configurable_and_only_sent_when_set(monkeypatch):
+    """The serverless function needs the shorter reasoning budget to fit 60 s."""
+    monkeypatch.delenv("FEN_LLM_REASONING_EFFORT", raising=False)
+    assert LLMConfig().reasoning_effort is None
+
+    monkeypatch.setenv("FEN_LLM_REASONING_EFFORT", "low")
+    assert LLMConfig().reasoning_effort == "low"
+
+    cfg = _config()
+    cfg.reasoning_effort = None
+    with mock.patch("services.common.llm.requests.post") as post:
+        post.return_value.status_code = 200
+        post.return_value.json.return_value = {"choices": [{"message": {"content": "ok"}}]}
+        chat_completion(cfg, "sys", "usr")
+    assert "reasoning_effort" not in post.call_args[1]["json"]
+
+    cfg.reasoning_effort = "low"
+    with mock.patch("services.common.llm.requests.post") as post:
+        post.return_value.status_code = 200
+        post.return_value.json.return_value = {"choices": [{"message": {"content": "ok"}}]}
+        chat_completion(cfg, "sys", "usr")
+    assert post.call_args[1]["json"]["reasoning_effort"] == "low"
+
+
 def test_chat_completion_disabled_when_no_base_url():
     cfg = _config(base=None)
     assert chat_completion(cfg, "s", "u") is None

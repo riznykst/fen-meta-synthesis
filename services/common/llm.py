@@ -70,6 +70,10 @@ class LLMConfig:
         self.structured_output: bool = (
             os.getenv("FEN_LLM_STRUCTURED_OUTPUT", "") or ""
         ).lower() in ("1", "true", "yes")
+        # Meta's API accepts reasoning_effort; "low" cuts the hidden reasoning
+        # tokens substantially, which is what makes a 3-document analysis fit
+        # inside a 60 s serverless invocation. Unset means provider default.
+        self.reasoning_effort: Optional[str] = os.getenv("FEN_LLM_REASONING_EFFORT") or None
 
     @property
     def enabled(self) -> bool:
@@ -112,6 +116,8 @@ def chat_completion_detailed(
         ],
         "temperature": 0,
     }
+    if config.reasoning_effort:
+        payload["reasoning_effort"] = config.reasoning_effort
     if json_schema is not None:
         payload["response_format"] = {
             "type": "json_schema",
