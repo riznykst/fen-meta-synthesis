@@ -30,11 +30,14 @@ Build for Your World
 
 ## Most Viral Track — X post link (optional bonus category)
 
-<URL of the X post — suggested content: a 30-second clip of the red
-unverified-quote card with Accept disabled, text: "Our AI invented a
-quote. The system caught it before a human could accept it. AI proposes,
-humans decide. Built with Muse Spark 1.3 for the Meta Global AI Developer
-Hackathon.">
+https://x.com/rezon99/status/2117905589074293035
+
+Posted 2026-11-04 by @rezon99 with the demo video attached. Opening line:
+"Your AI can invent a quote that looks real. The sentence built on it will read
+perfectly. The only thing between that and 'accepted knowledge' is a check almost
+nobody ships. We shipped it. 12 claims. 0 approved by AI." The first reply states
+the scope honestly: the video shows the verified path, while the caught-fabrication
+path is covered by tests and the deterministic SYNTHETIC fixture.
 
 ## Project Description
 
