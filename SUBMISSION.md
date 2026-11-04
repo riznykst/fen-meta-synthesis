@@ -147,7 +147,7 @@ Verified live during the hackathon: a real `POST /analyze` against
 `muse-spark-1.3` returned structured claims with all quotes verified,
 including a temporal-mismatch contradiction between two sources; a
 schema-constrained run on 2026-10-28 returned 2 claims, both quotes
-verified. Offline, 201 pytest tests and 64 Node UI tests cover the
+verified. Offline, 218 pytest tests and 116 Node UI tests cover the
 workflow with synthetic fixtures (labelled as such).
 
 What was built during the hackathon (vs the pre-existing open-source

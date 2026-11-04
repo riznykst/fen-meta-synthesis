@@ -131,7 +131,7 @@ python scripts/start_demo.py
 
 # Tests
 pip install -r requirements-common.txt
-python -m pytest -q                 # 211 tests
+python -m pytest -q                 # 218 tests
 node --test web/tests/*.test.js     # UI pure-function tests
 # from web/: npx playwright test    # browser e2e (needs the local stack)
 
@@ -181,7 +181,7 @@ only as a stand-in.
 
 This table is updated with every task commit. Nothing is listed as done
 without a test or a reproducible run. Current suites in this repository:
-**211 pytest + 109 Node tests + Playwright e2e (Review, Demo, Registry,
+**218 pytest + 116 Node tests + Playwright e2e (Review, Demo, Registry,
 Candidate)**, all passing (baseline was 125 + 18). The one Playwright test
 that needs the full pre-hackathon pipeline (webhook + Kafka) skips itself
 with an explicit reason when that stack is not running.

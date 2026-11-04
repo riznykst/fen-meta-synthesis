@@ -143,3 +143,51 @@ def test_community_voting_delivers_exactly_once(monkeypatch):
     assert r3.status_code == 409
 
     assert len(submitted) == 1, "delivery must be scheduled exactly once"
+
+
+def test_submit_candidates_rejects_malformed_payload():
+    """A candidate without annotation_id, or a non-list payload, is a client
+    error (422) — not a KeyError-driven 500."""
+    client = _client()
+    assert client.post("/candidates", json={"candidates": [{"entity_label": "no_id"}]}).status_code == 422
+    assert client.post("/candidates", json={"candidates": "invalid"}).status_code == 422
+
+
+def test_delivery_sends_bearer_token_when_configured(monkeypatch):
+    """The mock must authenticate to the bridge when a webhook token is set;
+    otherwise every delivery is rejected and the demo silently never lands."""
+    captured = []
+
+    def _mock_post(url, *args, **kwargs):
+        captured.append(kwargs.get("headers"))
+        resp = mock.Mock()
+        resp.raise_for_status = lambda: None
+        return resp
+
+    monkeypatch.setattr(mock_main, "DECISION_DELAY_S", 0.0)
+    monkeypatch.setattr(mock_main, "WEBHOOK_MAX_RETRIES", 1)
+    monkeypatch.setattr(mock_main, "WEBHOOK_TOKEN", "s3cret")
+    monkeypatch.setattr(mock_main.requests, "post", _mock_post)
+
+    mock_main._deliver_decision_after_delay({"annotation_id": "a1", "entity_label": "x"})
+
+    assert captured == [{"Authorization": "Bearer s3cret"}]
+
+
+def test_delivery_sends_no_auth_header_without_token(monkeypatch):
+    captured = []
+
+    def _mock_post(url, *args, **kwargs):
+        captured.append(kwargs.get("headers"))
+        resp = mock.Mock()
+        resp.raise_for_status = lambda: None
+        return resp
+
+    monkeypatch.setattr(mock_main, "DECISION_DELAY_S", 0.0)
+    monkeypatch.setattr(mock_main, "WEBHOOK_MAX_RETRIES", 1)
+    monkeypatch.setattr(mock_main, "WEBHOOK_TOKEN", None)
+    monkeypatch.setattr(mock_main.requests, "post", _mock_post)
+
+    mock_main._deliver_decision_after_delay({"annotation_id": "a1", "entity_label": "x"})
+
+    assert captured == [None]

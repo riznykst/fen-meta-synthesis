@@ -76,7 +76,7 @@ from mock_fen_api.qv_voting import (
     qv_decide,
     qv_scores,
 )
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from services.common.analysis import AnalysisParseError, SourceDocument
 from services.common.analyze import AnalysisUnavailable, analyze_documents
@@ -124,6 +124,9 @@ app.add_middleware(
 )
 
 WEBHOOK_URL = os.getenv("FEN_BRIDGE_WEBHOOK_URL", "http://localhost:8101/webhook/decision")
+# When the bridge enforces a bearer token, the mock must present it — otherwise
+# every delivery is rejected with 401 and the demo silently never completes.
+WEBHOOK_TOKEN = os.getenv("FEN_WEBHOOK_TOKEN") or os.getenv("FEN_BRIDGE_WEBHOOK_TOKEN")
 DECISION_DELAY_S = float(os.getenv("MOCK_FEN_DECISION_DELAY_S", "3"))
 MAX_WORKERS = int(os.getenv("MOCK_FEN_MAX_WORKERS", "8"))
 WEBHOOK_MAX_RETRIES = int(os.getenv("MOCK_FEN_WEBHOOK_RETRIES", "3"))
@@ -170,6 +173,27 @@ class AnalyzeBody(BaseModel):
 
     documents: list[SourceDocument] = Field(min_length=1)
     focus: Optional[str] = None
+
+
+class CandidateIn(BaseModel):
+    """One candidate as accepted by POST /candidates.
+
+    Validated rather than read from a raw dict: a candidate without an
+    annotation_id used to raise KeyError and surface as a 500, which tells the
+    caller nothing. Now it is a 422 with the offending field named."""
+
+    model_config = ConfigDict(extra="allow")  # keep submitter and any DAP extras
+
+    annotation_id: str = Field(min_length=1)
+    document_id: Optional[str] = None
+    entity_label: Optional[str] = None
+    entity_type: Optional[str] = None
+
+
+class CandidatesBody(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    candidates: list[CandidateIn] = Field(min_length=1)
 _reputation_history: list = []
 # Voter/contributor reputation (demo QV mode): name -> points.
 _reputation: Dict[str, int] = {}
@@ -454,10 +478,11 @@ def _deliver_decision_after_delay(
     """
     time.sleep(DECISION_DELAY_S)
     decision = _fake_decide(candidate, outcome=forced_outcome, recommendation=recommendation)
+    headers = {"Authorization": f"Bearer {WEBHOOK_TOKEN}"} if WEBHOOK_TOKEN else None
     start = time.perf_counter()
     for attempt in range(WEBHOOK_MAX_RETRIES):
         try:
-            resp = requests.post(WEBHOOK_URL, json=decision, timeout=10)
+            resp = requests.post(WEBHOOK_URL, json=decision, timeout=10, headers=headers)
             resp.raise_for_status()
             MOCK_DELIVERY_SECONDS.observe(time.perf_counter() - start)
             MOCK_DECISIONS_DELIVERED.inc()
@@ -484,8 +509,8 @@ def _deliver_decision_after_delay(
 
 # ------------------------------------------------------------------- routes
 @app.post("/candidates")
-def submit_candidates(payload: dict):
-    candidates = payload.get("candidates", [])
+def submit_candidates(payload: CandidatesBody):
+    candidates = [c.model_dump(exclude_none=True) for c in payload.candidates]
     for candidate in candidates:
         _record_candidate(candidate)
         if VOTING_MODE in ("community", "qv"):

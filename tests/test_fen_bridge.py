@@ -167,3 +167,44 @@ def test_webhook_requires_token_when_configured():
     )
     assert resp_ok.status_code == 202
     assert len(producer.sent) == 1
+
+
+def test_webhook_returns_503_when_kafka_send_fails():
+    """A broker outage must surface as 503, not an unhandled 500 — the caller
+    (the DAO) can retry a 503; a 500 looks like our bug and strands the item."""
+
+    class _FailingProducer:
+        def send(self, topic, value=None, key=None):
+            raise RuntimeError("Kafka broker down")
+
+    app.state.producer = _FailingProducer()
+    app.state.webhook_token = None
+    client = TestClient(app)
+
+    resp = client.post("/webhook/decision", json=VALID_DECISION)
+    assert resp.status_code == 503
+    assert resp.json()["detail"] == "Kafka unavailable"
+
+
+def test_webhook_readyz_degraded_when_probe_fails():
+    class _DisconnectedProducer:
+        def bootstrap_connected(self):
+            return False
+
+    app.state.producer = _DisconnectedProducer()
+    assert TestClient(app).get("/readyz").json() == {
+        "status": "degraded",
+        "kafka": "unreachable",
+    }
+
+
+def test_webhook_readyz_degraded_when_probe_raises():
+    class _ErrorProducer:
+        def bootstrap_connected(self):
+            raise RuntimeError("metadata probe error")
+
+    app.state.producer = _ErrorProducer()
+    assert TestClient(app).get("/readyz").json() == {
+        "status": "degraded",
+        "kafka": "unreachable",
+    }
