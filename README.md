@@ -76,6 +76,69 @@ documents в”Ђв”Ђв–є Meta model в”Ђв”Ђв–є structured anal
 The model never sets a final status. `accepted`, `rejected`, and `disputed`
 exist only after a human decision.
 
+## Data model and storage
+
+The hosted demo keeps nothing in memory: a serverless function shares no state
+between requests, and the point of the product is that a decision survives. So
+every analysis, item and human verdict lives in Postgres (Supabase); the local
+run uses an append-only JSONL file instead, with the same response shapes.
+
+```mermaid
+erDiagram
+    analyses ||--o{ analysis_documents : "reads from"
+    analyses ||--o{ items : "proposes"
+    items    ||--o{ decisions : "human verdicts"
+
+    analyses {
+        text analysis_id PK
+        text prompt_hash "which prompt produced it"
+        text model_requested
+        text model_returned
+        jsonb provenance_check "quote check result"
+    }
+    analysis_documents {
+        text document_id PK
+        text content "verbatim source text"
+        text provenance "primary / secondary / synthetic"
+    }
+    items {
+        text item_id PK
+        text item_type "claim or contradiction"
+        text quote "must exist in the document"
+        boolean quote_verified "computed by code"
+    }
+    decisions {
+        text decision_id PK
+        text verdict "accept / reject / dispute"
+        text reviewer "who decided"
+        timestamptz recorded_at "append-only"
+    }
+```
+
+| Table / object | Role |
+|---|---|
+| `analyses` | One model run: model, prompt hash, latency, usage, provenance check |
+| `analysis_documents` | The verbatim source text a quote is checked against (never public) |
+| `items` | Claims and contradictions; `quote_verified` is computed by code, never by the model |
+| `decisions` | Human verdicts. **Append-only**: a trigger rejects `UPDATE` and `DELETE` |
+| `record_decision()` | The only write path for a verdict — it also refuses an unverified quote |
+| `registry_public` | Definer view exposing accepted rows only; the browser may read this and nothing else |
+
+Access model: the publishable key can `select` from `registry_public` only; all
+four base tables have RLS enabled with no policies, so anon reads are denied;
+the server writes with the database connection string. Grants and the migration
+order are in [supabase/README.md](supabase/README.md).
+
+**Deployment gotcha:** a Supabase *direct* host (`db.<ref>.supabase.co`)
+resolves to IPv6 only, and a Vercel function has no IPv6 egress — the connection
+fails with `OSError 99`. The function must use the IPv4 pooler, e.g.
+`postgres.<ref>@aws-1-eu-west-3.pooler.supabase.com:5432`.
+
+Environment used by the hosted build (set in the Vercel project, never in the
+repository): `FEN_LLM_BASE_URL`, `FEN_LLM_API_KEY`, `FEN_LLM_MODEL`,
+`FEN_LLM_TIMEOUT_S`, `FEN_LLM_REASONING_EFFORT`, `SUPABASE_DB_URL`, plus the
+public `SUPABASE_URL` and `SUPABASE_ANON_KEY` for the registry page.
+
 ## Implementation map вЂ” demo, repository, development setup
 
 The diagram shows what actually runs in the demo today. Solid paths are
@@ -231,6 +294,12 @@ hackathon. To keep the boundary verifiable:
 
 ## Quick start
 
+**Fastest path: nothing to install.** Open
+https://fen-meta-synthesis.vercel.app/demo, pick a dataset, press Analyse. The
+model call and the database both happen on the deployment.
+
+To run the same thing on your machine:
+
 Requirements: Python 3.10+ (verified locally on 3.10.4), Node.js 22, and
 Docker only for the full pre-hackathon stack.
 
@@ -249,6 +318,10 @@ Three-minute demo (no Docker, no Kafka needed):
 python scripts/start_demo.py
 # open http://127.0.0.1:8082/web/portal/demo.html and follow DEMO.md
 ```
+
+`start_demo.py` sets `fen_mock_base` implicitly: the page sees `:8100` and the
+header badge switches to “local backend”. Supabase is optional locally — without
+`SUPABASE_DB_URL` the store is `artifacts/store.jsonl`.
 
 Full stack (Kafka, Fuseki, services, portal):
 
