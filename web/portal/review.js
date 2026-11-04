@@ -696,13 +696,18 @@
   // participant opening this screen in another tab joins the SAME thread
   // (proposals + votes) instead of an empty screen. Loads the newest
   // analysis on page open; the Refresh button re-syncs votes.
+  // The deployment path is a detail — show a readable name instead of the URL.
+  function backendLabel() {
+    return String(MOCK).indexOf("/api/index") >= 0 ? "live demo" : MOCK;
+  }
+
   async function loadSharedThread() {
     var note = $("sharedThreadText");
     try {
       var list = await apiFetch("/analyses");
       var items = list.analyses || [];
       if (!items.length) {
-        if (note) note.textContent = "Shared thread (" + MOCK + "): no analysis on the server yet — analyse documents to start one.";
+        if (note) note.textContent = "Shared thread (" + backendLabel() + "): no analysis on the server yet — analyse documents to start one.";
         return false;
       }
       var latest = items[0];
@@ -733,12 +738,12 @@
       syncReviewerChoices();
       renderAll();
       if (note) {
-        note.textContent = "Shared thread (" + MOCK + "): joined analysis " + latest.analysis_id
+        note.textContent = "Shared thread (" + backendLabel() + "): joined analysis " + latest.analysis_id
           + " — " + state.decisions.length + " recorded vote(s). Other participants see the same thread; set your reviewer name and vote.";
       }
       return true;
     } catch (e) {
-      if (note) note.textContent = "Shared thread (" + MOCK + "): could not load — " + (e.message || e) + ". If this is wrong, clear the saved API base or open with ?fen_mock_base=http://localhost:8100";
+      if (note) note.textContent = "Shared thread (" + backendLabel() + "): could not load — " + (e.message || e) + ". Retry with Refresh; the local alternative runs scripts/start_demo.py.";
       return false;
     }
   }
@@ -971,12 +976,22 @@
     var refresh = $("refreshThread");
     if (refresh) refresh.addEventListener("click", function () { loadSharedThread(); });
     var reset = $("resetBase");
-    if (reset) reset.addEventListener("click", function () {
-      try { localStorage.removeItem("fen_mock_base"); } catch (e) { /* ignore */ }
-      var u = new URL(window.location.href);
-      u.searchParams.delete("fen_mock_base");
-      window.location.href = u.toString();
-    });
+    if (reset) {
+      // The button only has a job when something local is in play: either the
+      // page runs against :8100, or an override points it at a local port.
+      // On the hosted build it would just break the page, so it is hidden.
+      var hosted = String(MOCK).indexOf("/api/index") >= 0;
+      if (hosted) {
+        reset.hidden = true;
+      } else {
+        reset.addEventListener("click", function () {
+          try { localStorage.removeItem("fen_mock_base"); } catch (e) { /* ignore */ }
+          var u = new URL(window.location.href);
+          u.searchParams.delete("fen_mock_base");
+          window.location.href = u.toString();
+        });
+      }
+    }
     // Join the shared thread (if any) so additional participants/tabs see
     // the same proposals and votes instead of an empty screen.
     loadSharedThread();

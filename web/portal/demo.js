@@ -325,6 +325,23 @@
     return global.fenApiUrl ? global.fenApiUrl(MOCK_BASE, path) : MOCK_BASE + path;
   }
 
+  // The badge must describe the backend that is actually answering: the hosted
+  // build talks to the Vercel function + Supabase, while a local run talks to
+  // the FastAPI process on :8100. Saying "local backend" on the live site would
+  // be wrong, and saying "hosted" locally would be worse.
+  function describeBackend() {
+    var badge = $("modelBadge");
+    if (!badge) return;
+    var hosted = String(MOCK_BASE).indexOf("/api/index") >= 0;
+    badge.textContent = hosted
+      ? "Meta Model API · muse-spark-1.3 · hosted on Vercel + Supabase"
+      : "Meta Model API · muse-spark-1.3 · local backend";
+    badge.title = hosted
+      ? "Analyses run in a Vercel function and are stored in Supabase. Nothing runs on your machine."
+      : "Analyses run in the local FastAPI process on :8100 (scripts/start_demo.py).";
+  }
+  describeBackend();
+
   async function refreshRegistry() {
     var box = $("registry");
     if (!box) return;
@@ -334,7 +351,7 @@
       var data = await resp.json();
       box.innerHTML = renderRegistryHtml(data.records || [], MOCK_BASE);
     } catch (e) {
-      box.innerHTML = '<p class="note">Registry unavailable — start the local backend to see accepted knowledge.</p>';
+      box.innerHTML = '<p class="note">Registry unavailable — the demo API did not answer. Retry with Refresh; to run everything locally use <code>python scripts/start_demo.py</code>.</p>';
     }
   }
 
