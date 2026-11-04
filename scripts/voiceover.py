@@ -176,6 +176,34 @@ def audio_duration_s(path: Path) -> float:
     return 0.0
 
 
+# A line may never start while the previous one is still speaking: keep a real
+# pause between them, otherwise two voices collide and the next line sounds
+# rushed ("Twelve proposals..." used to start on top of the previous tail).
+MIN_GAP_MS = 600
+
+
+def schedule() -> tuple[list[int], dict[int, int]]:
+    """Effective start time per segment plus measured durations.
+
+    Each cue keeps its requested anchor but is pushed later when the previous
+    segment would still be audible. This is the single source of truth for
+    both the audio mix and the subtitles, so they can never drift apart.
+    """
+    timings_path = VOICE_DIR / "timings.json"
+    if not timings_path.is_file():
+        sys.exit("no timings.json — run --generate first")
+    timings = json.loads(timings_path.read_text(encoding="utf-8"))
+    durations = {item["index"]: item["duration_ms"] for item in timings}
+
+    starts: list[int] = []
+    previous_end = -10**9
+    for index, (anchor_ms, _window_ms, _text) in enumerate(SEGMENTS, start=1):
+        effective = max(anchor_ms, previous_end + MIN_GAP_MS)
+        starts.append(effective)
+        previous_end = effective + durations.get(index, 0)
+    return starts, durations
+
+
 def generate(voice_id: str) -> dict:
     VOICE_DIR.mkdir(parents=True, exist_ok=True)
     report = []
@@ -204,13 +232,17 @@ def generate(voice_id: str) -> dict:
 def assemble() -> None:
     if not VIDEO_IN.is_file():
         sys.exit(f"missing video: {VIDEO_IN}")
+    starts, durations = schedule()
     parts, labels = [], []
-    for index, (start_ms, _window, _text) in enumerate(SEGMENTS, start=1):
+    for index, start_ms in enumerate(starts, start=1):
         src = VOICE_DIR / f"{index:02d}.mp3"
         if not src.is_file():
             sys.exit(f"missing segment: {src} (run --generate first)")
         parts.append(f"[{index}:a]adelay={start_ms}|{start_ms},volume=1.0[a{index}]")
         labels.append(f"[a{index}]")
+    for index, start_ms in enumerate(starts, start=1):
+        end_s = (start_ms + durations.get(index, 0)) / 1000
+        print(f"  {index:02d}  {start_ms / 1000:6.2f}s -> {end_s:6.2f}s", flush=True)
     graph = ";".join(parts) + ";" + "".join(labels) + f"amix=inputs={len(labels)}:normalize=0,apad[aout]"
     cmd = [ffmpeg_exe(), "-y", "-i", str(VIDEO_IN)]
     for index in range(1, len(SEGMENTS) + 1):

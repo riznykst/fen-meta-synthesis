@@ -20,7 +20,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from scripts.voiceover import SEGMENTS  # noqa: E402
+from scripts.voiceover import SEGMENTS, schedule  # noqa: E402
 
 MAX_CHARS = 46
 
@@ -56,13 +56,13 @@ def stamp(ms: int) -> str:
 
 
 def main() -> int:
-    timings = json.loads(
-        (ROOT / "artifacts/video/voice/timings.json").read_text(encoding="utf-8")
-    )
-    durations = {item["index"]: item["duration_ms"] for item in timings}
+    # Same scheduler as the audio mix: subtitles can never drift from the voice.
+    starts, durations = schedule()
 
     cues: list[tuple[int, int, list[str]]] = []
-    for index, (start_ms, _window_ms, text) in enumerate(SEGMENTS, start=1):
+    for index, ((_anchor, _window_ms, text), start_ms) in enumerate(
+        zip(SEGMENTS, starts), start=1
+    ):
         duration = durations.get(index, 0)
         group = pages(text)
         weights = [sum(len(line) for line in page) for page in group]
