@@ -98,15 +98,17 @@ the `baseline-pre-hackathon` tag in this repository
 
 ## 2-Minute Demo Video
 
-https://youtu.be/f77s4HoNH9M
+https://youtu.be/yomKcH8iZN4
 
-Public on YouTube (checked 2026-11-04: oEmbed returns 200, `isPrivate: false`).
+Public on YouTube (checked 2026-11-04: oEmbed returns 200, `isPrivate: false`,
+length 116 s). The clip shows a visible cursor moving and clicking through the
+UI, and ends on a closing card with the live demo and repository links.
+Narration in the author's own cloned voice.
+
 Note: the recording predates the serverless deployment, so it shows the demo
 driven by a local backend; the live site at
 https://fen-meta-synthesis.vercel.app/demo now runs the same flow against the
 Meta Model API and Supabase with nothing running locally.
-1:56 running time, ending on a closing card with the live demo and repository
-links. Narration in the author's own cloned voice.
 The video shows, in order: the problem (one Sumerian form, two dictionary entries),
 Muse Spark 1.3 proposing claims with verbatim quotes, the code-only quote check
 (12/12 located, nothing approved by the model), the provenance chain

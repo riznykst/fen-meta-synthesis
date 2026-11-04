@@ -1,4 +1,4 @@
-﻿# FEN Г— Meta вЂ” Human-Governed AI Synthesis
+# FEN Г— Meta вЂ” Human-Governed AI Synthesis
 
 **AI proposes. Humans decide. Every decision keeps its provenance.**
 
@@ -9,7 +9,7 @@ Review screen is at `/review`, the public registry of accepted knowledge at
 function at `api/index.py` calls the Meta Model API and stores analyses, items
 and human verdicts in Supabase, so nothing needs to be started locally.
 
-**Demo video (1:56): https://youtu.be/f77s4HoNH9M**
+**Demo video (1:56): https://youtu.be/yomKcH8iZN4**
 
 Three datasets ship with the demo: a synthetic trade-route story, ePSD2
 dictionary excerpts for Sumerian lemmas, and EU AI Act Articles 11, 12 and 18
