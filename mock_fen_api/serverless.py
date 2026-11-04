@@ -194,10 +194,30 @@ def provenance(item_id: str, analysis_id: Optional[str] = None):
 
 @app.get("/registry")
 def list_registry():
+    reg = registry()
     try:
-        records = registry().load_registry()
+        records = reg.load_registry()
+        decisions = reg.list_decisions()
     except SupabaseError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    # The local API attaches votes to every registry record; the SQL view does
+    # not, so rebuild them here — the UI must not claim "decided by 0 reviewers"
+    # for an item that a human actually accepted.
+    by_item: dict[tuple[str, str], list] = {}
+    for decision in decisions:
+        by_item.setdefault((decision["analysis_id"], decision["item_id"]), []).append(decision)
+    for record in records:
+        votes = by_item.get((record.get("analysis_id"), record.get("item_id")), [])
+        record["votes"] = [
+            {
+                "reviewer": v["reviewer"],
+                "verdict": v["verdict"],
+                "recorded_at": v["recorded_at"],
+            }
+            for v in votes
+        ]
+        record["voter_count"] = len({v["reviewer"] for v in votes})
     return {"records": records, "count": len(records)}
 
 
