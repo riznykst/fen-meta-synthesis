@@ -314,15 +314,22 @@
     }
   }
 
-  var MOCK_BASE = global.fenApiBase
-    ? global.fenApiBase("fen_mock_base", "http://localhost:8100")
+  var MOCK_FALLBACK = global.fenDefaultMockBase
+    ? global.fenDefaultMockBase()
     : "http://localhost:8100";
+  var MOCK_BASE = global.fenApiBase
+    ? global.fenApiBase("fen_mock_base", MOCK_FALLBACK)
+    : MOCK_FALLBACK;
+
+  function apiUrl(path) {
+    return global.fenApiUrl ? global.fenApiUrl(MOCK_BASE, path) : MOCK_BASE + path;
+  }
 
   async function refreshRegistry() {
     var box = $("registry");
     if (!box) return;
     try {
-      var resp = await fetch(MOCK_BASE + "/registry");
+      var resp = await fetch(apiUrl("/registry"));
       if (!resp.ok) throw new Error("HTTP " + resp.status);
       var data = await resp.json();
       box.innerHTML = renderRegistryHtml(data.records || [], MOCK_BASE);

@@ -457,13 +457,23 @@
   // ---------------------------------------------------------- browser wiring
   if (typeof document === "undefined") return;
 
-  var MOCK = global.fenApiBase ? global.fenApiBase("fen_mock_base", "http://localhost:8100") : "http://localhost:8100";
+  // Local dev talks to the FastAPI process on :8100; the hosted build talks to
+  // the single Vercel function at /api/index (see fenApiUrl in api-base.js).
+  var MOCK_FALLBACK = global.fenDefaultMockBase
+    ? global.fenDefaultMockBase()
+    : "http://localhost:8100";
+  var MOCK = global.fenApiBase
+    ? global.fenApiBase("fen_mock_base", MOCK_FALLBACK)
+    : MOCK_FALLBACK;
+  function apiUrl(path) {
+    return global.fenApiUrl ? global.fenApiUrl(MOCK, path) : MOCK + path;
+  }
   var state = { analysis: null, decisions: [], documents: [], showAll: false };
 
   function $(id) { return document.getElementById(id); }
 
   async function apiFetch(path, opts) {
-    var resp = await fetch(MOCK + path, opts);
+    var resp = await fetch(apiUrl(path), opts);
     if (!resp.ok) {
       var detail = "";
       try {
@@ -927,8 +937,8 @@
 
   async function downloadRecord(itemId) {
     try {
-      var resp = await fetch(MOCK + "/records/" + encodeURIComponent(itemId)
-        + "?analysis_id=" + encodeURIComponent(state.analysis.analysis_id));
+      var resp = await fetch(apiUrl("/records/" + encodeURIComponent(itemId)
+        + "?analysis_id=" + encodeURIComponent(state.analysis.analysis_id)));
       if (!resp.ok) throw new Error("HTTP " + resp.status);
       var blob = await resp.blob();
       var url = URL.createObjectURL(blob);

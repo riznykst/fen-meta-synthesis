@@ -252,6 +252,199 @@ class SupabaseRegistry:
         }
 
     # -------------------------------------------------------------- reads ---
+    def list_analyses(self, limit: int = 50) -> list:
+        """Analyses newest first, in the shape GET /analyses returns.
+
+        Serverless instances share no memory, so this is the only way a second
+        request (or another participant) can see an analysis started elsewhere.
+        """
+        conn = self._connect()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                """
+                select a.analysis_id, a.created_at, a.status, a.model_requested,
+                       a.model_returned, a.provenance_check,
+                       coalesce(count(i.id) filter (where i.item_type = 'claim'), 0)
+                from public.analyses a
+                left join public.items i on i.analysis_fk = a.id
+                group by a.id
+                order by a.created_at desc
+                limit %s
+                """,
+                (int(limit),),
+            )
+            rows = cur.fetchall()
+            out = []
+            for row in rows:
+                analysis_id, created_at, status, requested, returned, check, claims = row
+                cur.execute(
+                    """
+                    select d.document_id, d.title
+                    from public.analysis_documents d
+                    join public.analyses a on a.id = d.analysis_fk
+                    where a.analysis_id = %s
+                    order by d.document_id
+                    """,
+                    (analysis_id,),
+                )
+                docs = [{"document_id": r[0], "title": r[1]} for r in cur.fetchall()]
+                out.append({
+                    "analysis_id": analysis_id,
+                    "created_at": created_at.isoformat().replace("+00:00", "Z")
+                    if hasattr(created_at, "isoformat") else str(created_at),
+                    "status": status,
+                    "model": {
+                        "provider": "meta",
+                        "requested": requested,
+                        "returned": returned,
+                    },
+                    "claims_total": int(claims or 0),
+                    "documents": docs,
+                })
+            return out
+        except Exception as exc:  # noqa: BLE001
+            raise SupabaseError(f"could not list analyses: {exc}") from exc
+        finally:
+            conn.close()
+
+    def load_analysis(self, analysis_id: str) -> Optional[dict]:
+        """One analysis in the POST /analyze response shape, plus its sources."""
+        conn = self._connect()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                """
+                select id, status, model_provider, model_requested, model_returned,
+                       prompt_hash, created_at, latency_ms, usage, provenance_check
+                from public.analyses where analysis_id = %s
+                """,
+                (analysis_id,),
+            )
+            row = cur.fetchone()
+            if row is None:
+                return None
+            (analysis_fk, status, provider, requested, returned, prompt_hash,
+             created_at, latency_ms, usage, check) = row
+
+            cur.execute(
+                """
+                select document_id, title, content, provenance
+                from public.analysis_documents
+                where analysis_fk = %s order by document_id
+                """,
+                (analysis_fk,),
+            )
+            documents = [
+                {"document_id": r[0], "title": r[1], "text": r[2], "provenance": r[3]}
+                for r in cur.fetchall()
+            ]
+
+            cur.execute(
+                """
+                select item_id, item_type, statement, quote, interpretation,
+                       document_id, uncertainty, review_recommendation, ambiguities,
+                       quote_verified, provenance_status, provenance,
+                       contradiction_kind, explanation,
+                       alternative_interpretations, claim_ids
+                from public.items where analysis_fk = %s order by item_id
+                """,
+                (analysis_fk,),
+            )
+            claims, contradictions = [], []
+            for r in cur.fetchall():
+                (item_id, item_type, statement, quote, interpretation, document_id,
+                 uncertainty, recommendation, ambiguities, quote_verified,
+                 provenance_status, provenance, kind, explanation,
+                 alternatives, claim_ids) = r
+                if item_type == "claim":
+                    claims.append({
+                        "claim_id": item_id,
+                        "quote": quote,
+                        "statement": statement,
+                        "interpretation": interpretation,
+                        "document_id": document_id,
+                        "ambiguities": list(ambiguities or []),
+                        "uncertainty": uncertainty,
+                        "review_recommendation": recommendation,
+                        "quote_verified": bool(quote_verified),
+                        "provenance_status": provenance_status,
+                        "provenance": provenance or "primary",
+                    })
+                else:
+                    contradictions.append({
+                        "contradiction_id": item_id,
+                        "claim_ids": list(claim_ids or []),
+                        "kind": kind,
+                        "explanation": explanation or "",
+                        "alternative_interpretations": list(alternatives or []),
+                        "quotes_verified": bool(quote_verified),
+                    })
+
+            return {
+                "analysis_id": analysis_id,
+                "status": status,
+                "model": {
+                    "provider": provider,
+                    "requested": requested,
+                    "returned": returned,
+                },
+                "usage": usage,
+                "prompt_hash": prompt_hash,
+                "created_at": created_at.isoformat().replace("+00:00", "Z")
+                if hasattr(created_at, "isoformat") else str(created_at),
+                "latency_ms": latency_ms,
+                "analysis": {
+                    "claims": claims,
+                    "contradictions": contradictions,
+                },
+                "provenance_check": check or {},
+                "documents": documents,
+            }
+        except Exception as exc:  # noqa: BLE001
+            raise SupabaseError(f"could not load analysis: {exc}") from exc
+        finally:
+            conn.close()
+
+    def list_decisions(self, analysis_id: Optional[str] = None) -> list:
+        """Recorded human verdicts, oldest first (the order they were cast)."""
+        conn = self._connect()
+        try:
+            cur = conn.cursor()
+            sql = """
+                select d.decision_id, a.analysis_id, i.item_id, i.item_type,
+                       d.verdict, d.status, d.reviewer, d.comment, d.recorded_at
+                from public.decisions d
+                join public.items i on i.id = d.item_fk
+                join public.analyses a on a.id = i.analysis_fk
+            """
+            params: tuple = ()
+            if analysis_id:
+                sql += " where a.analysis_id = %s"
+                params = (analysis_id,)
+            sql += " order by d.recorded_at asc"
+            cur.execute(sql, params)
+            rows = cur.fetchall()
+            return [
+                {
+                    "decision_id": r[0],
+                    "analysis_id": r[1],
+                    "item_id": r[2],
+                    "item_type": r[3],
+                    "verdict": r[4],
+                    "status": r[5],
+                    "reviewer": r[6],
+                    "comment": r[7] or "",
+                    "recorded_at": r[8].isoformat().replace("+00:00", "Z")
+                    if hasattr(r[8], "isoformat") else str(r[8]),
+                }
+                for r in rows
+            ]
+        except Exception as exc:  # noqa: BLE001
+            raise SupabaseError(f"could not list decisions: {exc}") from exc
+        finally:
+            conn.close()
+
     def load_registry(self, limit: int = 100) -> list:
         """Accepted knowledge, newest first (same shape as GET /registry)."""
         conn = self._connect()

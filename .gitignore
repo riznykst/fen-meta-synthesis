@@ -42,3 +42,6 @@ artifacts/
 # `git update-index --skip-worktree VIDEO_SCRIPT.md` — the ignore rule
 # alone does not untrack files.
 VIDEO_SCRIPT.md
+
+.vercel
+.env*

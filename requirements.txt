@@ -1,0 +1,7 @@
+# Vercel Python runtime dependencies for the hosted demo API (api/index.py).
+# The Docker images use docker/requirements-service.txt; this file exists only
+# so the serverless function can import the shared analysis code.
+fastapi>=0.110
+pydantic>=2,<3
+requests>=2.31
+pg8000>=1.31

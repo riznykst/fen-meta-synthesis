@@ -1,6 +1,19 @@
 # Project-level tool config (TECH-DEBT P2: no linter config existed).
-# Zero-build Python services — no build-system section on purpose (pip
-# installs from requirements-*.txt), this file only configures tooling.
+# Zero-build Python services — pip installs from requirements-*.txt. The
+# [project] table exists ONLY so Vercel's Python runtime installs the
+# serverless function's dependencies (it reads pyproject before requirements.txt).
+
+# --- serverless function deps (Vercel) ---------------------------------
+[project]
+name = "fen-meta-synthesis"
+version = "0.2.8"
+requires-python = ">=3.10"
+dependencies = [
+  "fastapi>=0.110",
+  "pydantic>=2,<3",
+  "requests>=2.31",
+  "pg8000>=1.31",
+]
 
 # --- pytest ------------------------------------------------------------
 [tool.pytest.ini_options]
