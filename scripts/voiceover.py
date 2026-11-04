@@ -31,7 +31,9 @@ import requests
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "artifacts" / "video"
 VOICE_DIR = OUT / "voice"
-VIDEO_IN = OUT / "fen-demo-final-110s.mp4"
+VIDEO_IN = Path(
+    os.environ.get("FEN_VIDEO_IN", str(OUT / "fen-demo-final-110s.mp4"))
+)
 VIDEO_OUT = OUT / "fen-demo-voice.mp4"
 
 API = "https://api.elevenlabs.io/v1"
@@ -66,6 +68,9 @@ SEGMENTS = [
      "vote trail and an exportable record."),
     (102000, 7000,
      "AI proposes. Evidence challenges. Humans decide. FEN, human-governed AI synthesis."),
+    # Closing beat on the end card (the video is extended by ~7 s for it).
+    (108500, 7500,
+     "Thank you for watching. The live demo and the source code are linked below."),
 ]
 
 
