@@ -181,6 +181,26 @@
     });
   }
 
+  // Ordering for the voting window: items that OTHER reviewers already
+  // decided but this reviewer has not come FIRST (their vote is what turns
+  // a decision into a consensus), then untouched proposals, then this
+  // reviewer's own decided items. Pure (testable).
+  function orderByNeed(items, decisions, reviewer, idOf) {
+    function rank(it) {
+      var id = idOf(it);
+      var mine = (decisions || []).some(function (d) {
+        return d.item_id === id && d.reviewer === reviewer;
+      });
+      if (mine) return 2;
+      return itemStatus(id, decisions) === "proposed" ? 1 : 0;
+    }
+    var list = (items || []).slice();
+    list.forEach(function (it, i) { it.__pos = i; });
+    list.sort(function (a, b) { return (rank(a) - rank(b)) || (a.__pos - b.__pos); });
+    list.forEach(function (it) { delete it.__pos; });
+    return list;
+  }
+
   // Demo focus: the voting window shows the first MAX_VISIBLE_CLAIMS open
   // claims by default so a demo stays short; the rest hides behind a
   // "Show all N" toggle. The constant lives here (before the exports and
@@ -413,6 +433,7 @@
     sourceInlineHtml: sourceInlineHtml,
     splitDecided: splitDecided,
     pendingFor: pendingFor,
+    orderByNeed: orderByNeed,
     visibleClaims: visibleClaims,
     MAX_VISIBLE_CLAIMS: MAX_VISIBLE_CLAIMS,
     renderDecidedList: renderDecidedList,
@@ -622,8 +643,12 @@
     var me = reviewerName();
     var orderedClaims = orderItems(claims, state.decisions, function (c) { return c.claim_id; });
     var orderedContras = orderItems(contras, state.decisions, function (x) { return x.contradiction_id; });
-    var myClaims = pendingFor(orderedClaims, state.decisions, me, function (c) { return c.claim_id; });
-    var myContras = pendingFor(orderedContras, state.decisions, me, function (x) { return x.contradiction_id; });
+    var myClaims = orderByNeed(
+      pendingFor(orderedClaims, state.decisions, me, function (c) { return c.claim_id; }),
+      state.decisions, me, function (c) { return c.claim_id; });
+    var myContras = orderByNeed(
+      pendingFor(orderedContras, state.decisions, me, function (x) { return x.contradiction_id; }),
+      state.decisions, me, function (x) { return x.contradiction_id; });
     var splitClaims = splitDecided(orderedClaims, state.decisions, function (c) { return c.claim_id; });
     var splitContras = splitDecided(orderedContras, state.decisions, function (x) { return x.contradiction_id; });
     if (!myClaims.length && !myContras.length) {
@@ -687,6 +712,14 @@
         if ($("doc" + n + "Title")) $("doc" + n + "Title").value = d.title || "";
         if (n === 3 && $("doc3Block")) { $("doc3Block").style.display = "block"; var a = $("addDocBtn"); if (a) a.style.display = "none"; }
       });
+      // The documents came from the shared thread, not from a preset —
+      // clearing the preset highlight avoids claiming "Demo (synthetic)"
+      // while showing real ePSD2 / EUR-Lex texts.
+      if (global.FenDemo && typeof global.FenDemo.clearDatasetSelection === "function") {
+        global.FenDemo.clearDatasetSelection(
+          "Documents loaded from the shared thread — analysed by another participant; no preset is selected."
+        );
+      }
       syncReviewerChoices();
       renderAll();
       if (note) {

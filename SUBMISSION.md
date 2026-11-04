@@ -93,12 +93,25 @@ history from the hackathon branch of the original FEN repository on
 the `baseline-pre-hackathon` tag in this repository
 (`git log baseline-pre-hackathon..main`) and HACKATHON.md.)
 
-## 3-Minute Demo Video
+## 2-Minute Demo Video
 
-<YouTube URL — the final video script is kept locally by the owner and
-is intentionally not part of this repository. The video must be understandable
-without running anything: problem → live analysis → caught fabricated
-quote → human decision → provenance chain → metrics.>
+https://youtu.be/f77s4HoNH9M
+
+Public on YouTube (checked 2026-11-04: oEmbed returns 200, `lengthSeconds: 109`,
+`isPrivate: false`). 1:49 running time. Narration in the author's own cloned voice.
+The video shows, in order: the problem (one Sumerian form, two dictionary entries),
+Muse Spark 1.3 proposing claims with verbatim quotes, the code-only quote check
+(12/12 located, nothing approved by the model), the provenance chain
+(document → quote → model + prompt hash), a human Accept as reviewer 1, a second
+reviewer accepting the same claim to produce community consensus, and the accepted
+record landing in the registry with its vote trail.
+
+Scope note, so the video is not over-read: it demonstrates the *verified* path
+(real quotes located in the real sources). The caught-fabrication path — a quote that
+cannot be located, red card, Accept disabled, API 409 — is covered by the automated
+tests and the deterministic SYNTHETIC fixture (`python eval/run_eval.py
+--provider fixture`: `quote_verified_rate 0.75`, `B0 0.25`), not by a frame in this
+video.
 
 ## Describe your use of Meta products to build the submitted project
 

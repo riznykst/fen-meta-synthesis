@@ -250,6 +250,22 @@ test("visibleClaims: first 3 by default, all when expanded", () => {
   assert.strictEqual(R.MAX_VISIBLE_CLAIMS, 3);
 });
 
+test("orderByNeed: items decided by others come first for me", () => {
+  const items = [{ claim_id: "c1" }, { claim_id: "c2" }, { claim_id: "c3" }];
+  const decisions = [{ item_id: "c2", reviewer: "ana", status: "accepted" }];
+  const idOf = (c) => c.claim_id;
+  // reviewer-2 has not voted: c2 (decided by ana) must lead, then untouched.
+  assert.deepStrictEqual(
+    R.orderByNeed(items, decisions, "reviewer-2", idOf).map(idOf),
+    ["c2", "c1", "c3"]
+  );
+  // ana already voted on c2: her own decided item goes last.
+  assert.deepStrictEqual(
+    R.orderByNeed(items, decisions, "ana", idOf).map(idOf),
+    ["c1", "c3", "c2"]
+  );
+});
+
 test("errorMessage: 502 is understandable and non-technical first", () => {
   const msg = R.errorMessage(502);
   assert.match(msg, /model did not respond/i);

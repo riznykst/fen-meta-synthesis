@@ -269,6 +269,20 @@
     fillDocuments(ds.docs, ds.note, id);
   }
 
+  // Documents can also arrive from the shared thread (another participant's
+  // analysis) rather than a preset. Then NO preset button may stay
+  // highlighted — otherwise the screen claims "Demo (synthetic)" while
+  // showing, say, ePSD2 entries.
+  function clearDatasetSelection(note) {
+    ["synthetic", "sumerian", "eu-ai-act"].forEach(function (key) {
+      var btn = $("dataset-" + key);
+      if (btn) btn.classList.remove("active");
+    });
+    if (note && $("datasetNote")) $("datasetNote").textContent = note;
+  }
+  // Expose for review.js, which fills the fields from the shared thread.
+  if (global.FenDemo) global.FenDemo.clearDatasetSelection = clearDatasetSelection;
+
   async function handleUpload(fileList) {
     var note = $("uploadNote");
     var files = Array.prototype.slice.call(fileList || []);
