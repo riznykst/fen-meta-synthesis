@@ -851,6 +851,16 @@
       state.decisions = [];
       state.showAll = false;
       renderAll();
+      // The shared-thread note is written when a thread is joined, so after a
+      // fresh analysis it still described the previous one. Say what happened:
+      // this browser started a new thread from its own documents.
+      var note = $("sharedThreadText");
+      if (note) {
+        var total = (result.provenance_check && result.provenance_check.claims_total) || 0;
+        note.textContent = "New analysis " + result.analysis_id + " started from your "
+          + docs.length + " document(s) — " + total + " claim(s) proposed, nothing decided yet."
+          + " Other participants opening the demo now will land on this thread.";
+      }
     } catch (e) {
       $("reviewError").textContent = errorMessage(e.status || 502, e.message);
     }
